@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import psycopg2
 import psycopg2.pool
+from psycopg2.extras import RealDictCursor
 
 from models import Booking
 
@@ -59,11 +60,16 @@ def init_db() -> None:
             """)
 
 
-def _row_to_booking(row: tuple) -> Booking:
+def _row_to_booking(row) -> Booking:
     return Booking(
-        id=row[0], user_id=row[1], service=row[2],
-        date=str(row[3]), time=row[4], full_name=row[5],
-        username=row[6], phone=row[7],
+        id=row["id"],
+        user_id=row["user_id"],
+        service=row["service"],
+        date=str(row["date"]),
+        time=row["time"],
+        full_name=row["full_name"],
+        username=row["username"],
+        phone=row["phone"],
     )
 
 
@@ -73,7 +79,7 @@ def add_booking(
 ) -> int | None:
     try:
         with _conn() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
                     """INSERT INTO bookings
                        (user_id, username, full_name, phone, service, date, time, created_at)
@@ -81,14 +87,14 @@ def add_booking(
                     (user_id, username, full_name, phone, service, date, time,
                      datetime.now(timezone.utc)),
                 )
-                return cur.fetchone()[0]
+                return cur.fetchone()["id"]
     except psycopg2.IntegrityError:
         return None
 
 
 def get_user_bookings(user_id: int) -> list[Booking]:
     with _conn() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """SELECT id, user_id, service, date, time, full_name, username, phone
                    FROM bookings WHERE user_id = %s AND date >= CURRENT_DATE
@@ -100,7 +106,7 @@ def get_user_bookings(user_id: int) -> list[Booking]:
 
 def get_all_upcoming_bookings() -> list[Booking]:
     with _conn() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """SELECT id, user_id, service, date, time, full_name, username, phone
                    FROM bookings WHERE date >= CURRENT_DATE ORDER BY date, time"""
@@ -110,7 +116,7 @@ def get_all_upcoming_bookings() -> list[Booking]:
 
 def get_booking_by_id(booking_id: int) -> Booking | None:
     with _conn() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """SELECT id, user_id, service, date, time, full_name, username, phone
                    FROM bookings WHERE id = %s""",
@@ -122,7 +128,7 @@ def get_booking_by_id(booking_id: int) -> Booking | None:
 
 def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | None:
     with _conn() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             if user_id is not None:
                 cur.execute(
                     """DELETE FROM bookings WHERE id = %s AND user_id = %s
@@ -141,9 +147,9 @@ def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | Non
 
 def get_booked_times(date: str) -> list[str]:
     with _conn() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT time FROM bookings WHERE date = %s", (date,))
-            return [r[0] for r in cur.fetchall()]
+            return [r["time"] for r in cur.fetchall()]
 
 
 def cleanup_old_bookings() -> int:

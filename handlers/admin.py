@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -48,7 +49,7 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id not in OWNER_IDS:
         await update.message.reply_text("У вас нет доступа.")
         return
-    bookings = database.get_all_upcoming_bookings()
+    bookings = await asyncio.to_thread(database.get_all_upcoming_bookings)
     if not bookings:
         await update.message.reply_text("Предстоящих записей нет.")
         return
@@ -60,7 +61,7 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
-    bookings = database.get_all_upcoming_bookings()
+    bookings = await asyncio.to_thread(database.get_all_upcoming_bookings)
     if not bookings:
         await query.edit_message_text("Предстоящих записей нет.", reply_markup=back_to_menu_kb())
         return
@@ -90,7 +91,7 @@ async def cb_owner_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.answer("Нет доступа.", show_alert=True)
         return
     booking_id = int(query.data.split(":")[1])
-    booking = database.get_booking_by_id(booking_id)
+    booking = await asyncio.to_thread(database.get_booking_by_id, booking_id)
     if not booking:
         await query.answer("Запись не найдена.", show_alert=True)
         return
@@ -116,7 +117,7 @@ async def cb_owner_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_
         await query.answer("Нет доступа.", show_alert=True)
         return
     booking_id = int(query.data.split(":")[1])
-    booking = database.cancel_booking(booking_id)
+    booking = await asyncio.to_thread(database.cancel_booking, booking_id)
     if not booking:
         await query.edit_message_text("Не удалось отменить запись.", reply_markup=back_to_menu_kb())
         return

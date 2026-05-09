@@ -1,8 +1,8 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from telegram import BotCommand
 from telegram.ext import Application, ContextTypes
 
 import database
@@ -48,31 +48,7 @@ def cancel_reminder(app: Application, booking_id: int) -> None:
         job.schedule_removal()
 
 
-async def _daily_cleanup(context: ContextTypes.DEFAULT_TYPE) -> None:
-    deleted = database.cleanup_old_bookings()
+async def daily_cleanup(context: ContextTypes.DEFAULT_TYPE) -> None:
+    deleted = await asyncio.to_thread(database.cleanup_old_bookings)
     if deleted:
         logger.info("Cleanup: removed %d booking(s) older than 45 days.", deleted)
-
-
-async def post_init(app: Application) -> None:
-    if app.job_queue is None:
-        logger.warning("JobQueue not available — reminders will not be sent.")
-        return
-    bookings = database.get_all_upcoming_bookings()
-    count = 0
-    for b in bookings:
-        schedule_reminder(app, b.id, b.user_id, b.service, b.date, b.time)
-        count += 1
-    if count:
-        logger.info("Rescheduled %d reminder(s) after restart.", count)
-    app.job_queue.run_repeating(_daily_cleanup, interval=86400, first=0, name="daily_cleanup")
-    await app.bot.set_my_commands([
-        BotCommand("start", "Главное меню"),
-        BotCommand("book", "Записаться"),
-        BotCommand("mybookings", "Мои записи"),
-    ])
-
-
-async def post_shutdown(app: Application) -> None:
-    database.close_pool()
-    logger.warning("Bot shut down.")

@@ -1,12 +1,26 @@
+import asyncio
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler
-
 
 import database
 from config import SALON_NAME
 from keyboards import back_to_menu_kb, main_menu_kb
 from reminders import cancel_reminder
 from utils import fmt_date, notify_owner
+
+
+def _build_my_bookings(bookings: list) -> tuple[str, InlineKeyboardMarkup]:
+    lines = ["Ваши предстоящие записи:\n"]
+    keyboard = []
+    for b in bookings:
+        lines.append(f"📌 {fmt_date(b.date)} в {b.time} — {b.service}")
+        keyboard.append([InlineKeyboardButton(
+            f"❌ Отменить {fmt_date(b.date)} {b.time}",
+            callback_data=f"cancel_ask:{b.id}",
+        )])
+    keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
+    return "\n".join(lines), InlineKeyboardMarkup(keyboard)
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -21,27 +35,19 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def cb_my_bookings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
-    bookings = database.get_user_bookings(update.effective_user.id)
+    bookings = await asyncio.to_thread(database.get_user_bookings, update.effective_user.id)
     if not bookings:
         await query.edit_message_text("У вас нет предстоящих записей.", reply_markup=back_to_menu_kb())
         return
-    lines = ["Ваши предстоящие записи:\n"]
-    keyboard = []
-    for b in bookings:
-        lines.append(f"📌 {fmt_date(b.date)} в {b.time} — {b.service}")
-        keyboard.append([InlineKeyboardButton(
-            f"❌ Отменить {fmt_date(b.date)} {b.time}",
-            callback_data=f"cancel_ask:{b.id}",
-        )])
-    keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
-    await query.edit_message_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(keyboard))
+    text, markup = _build_my_bookings(bookings)
+    await query.edit_message_text(text, reply_markup=markup)
 
 
 async def cb_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
     booking_id = int(query.data.split(":")[1])
-    booking = database.get_booking_by_id(booking_id)
+    booking = await asyncio.to_thread(database.get_booking_by_id, booking_id)
     if not booking or booking.user_id != update.effective_user.id:
         await query.answer("Запись не найдена.", show_alert=True)
         return
@@ -62,7 +68,7 @@ async def cb_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await query.answer()
     booking_id = int(query.data.split(":")[1])
     user = update.effective_user
-    booking = database.cancel_booking(booking_id, user_id=user.id)
+    booking = await asyncio.to_thread(database.cancel_booking, booking_id, user.id)
     if not booking:
         await query.edit_message_text("Не удалось отменить запись.", reply_markup=main_menu_kb(user.id))
         return
@@ -82,20 +88,12 @@ async def cb_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def cmd_my_bookings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    bookings = database.get_user_bookings(update.effective_user.id)
+    bookings = await asyncio.to_thread(database.get_user_bookings, update.effective_user.id)
     if not bookings:
         await update.message.reply_text("У вас нет предстоящих записей.", reply_markup=back_to_menu_kb())
         return
-    lines = ["Ваши предстоящие записи:\n"]
-    keyboard = []
-    for b in bookings:
-        lines.append(f"📌 {fmt_date(b.date)} в {b.time} — {b.service}")
-        keyboard.append([InlineKeyboardButton(
-            f"❌ Отменить {fmt_date(b.date)} {b.time}",
-            callback_data=f"cancel_ask:{b.id}",
-        )])
-    keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
-    await update.message.reply_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(keyboard))
+    text, markup = _build_my_bookings(bookings)
+    await update.message.reply_text(text, reply_markup=markup)
 
 
 async def cb_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

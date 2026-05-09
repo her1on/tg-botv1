@@ -1,3 +1,5 @@
+import asyncio
+
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 
@@ -5,9 +7,8 @@ import database
 from config import SALON_NAME
 from keyboards import confirm_kb, dates_kb, main_menu_kb, name_kb, phone_kb, services_kb, times_kb
 from reminders import schedule_reminder
+from states import CONFIRM, ENTER_NAME, ENTER_PHONE, SELECT_DATE, SELECT_SERVICE, SELECT_TIME
 from utils import fmt_date, is_valid_phone, notify_owner
-
-SELECT_SERVICE, SELECT_DATE, SELECT_TIME, ENTER_NAME, ENTER_PHONE, CONFIRM = range(6)
 
 
 async def cb_book(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -36,11 +37,12 @@ async def cb_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     date_str = query.data.split(":", 1)[1]
     context.user_data["date"] = date_str
+    booked = set(await asyncio.to_thread(database.get_booked_times, date_str))
     await query.edit_message_text(
         f"Услуга: {context.user_data['service']}\n"
         f"Дата: {fmt_date(date_str)}\n\n"
         "Выберите время:",
-        reply_markup=times_kb(date_str),
+        reply_markup=times_kb(date_str, booked),
     )
     return SELECT_TIME
 
@@ -136,14 +138,9 @@ async def cb_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return ConversationHandler.END
     name = ud.get("name", user.full_name)
 
-    booking_id = database.add_booking(
-        user_id=user.id,
-        username=user.username or "",
-        full_name=name,
-        phone=phone,
-        service=service,
-        date=date_str,
-        time=time_str,
+    booking_id = await asyncio.to_thread(
+        database.add_booking,
+        user.id, user.username or "", name, phone, service, date_str, time_str,
     )
 
     if booking_id is None:
@@ -223,10 +220,11 @@ async def cb_back_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await query.answer()
     date_str = context.user_data.get("date", "")
     service = context.user_data.get("service", "")
+    booked = set(await asyncio.to_thread(database.get_booked_times, date_str)) if date_str else set()
     await query.edit_message_text(
         f"Услуга: {service}\n"
         f"Дата: {fmt_date(date_str)}\n\n"
         "Выберите время:",
-        reply_markup=times_kb(date_str),
+        reply_markup=times_kb(date_str, booked),
     )
     return SELECT_TIME

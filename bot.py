@@ -1,6 +1,8 @@
+import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
 
+from telegram import BotCommand
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -11,15 +13,10 @@ from telegram.ext import (
 )
 
 import database
+import reminders
 from config import BOT_TOKEN, DATABASE_URL, OWNER_IDS, SERVICES, TIME_SLOTS, WORKING_DAYS
 from handlers.admin import cb_admin_panel, cb_owner_cancel_ask, cb_owner_cancel_confirm, cmd_admin
 from handlers.booking import (
-    CONFIRM,
-    ENTER_NAME,
-    ENTER_PHONE,
-    SELECT_DATE,
-    SELECT_SERVICE,
-    SELECT_TIME,
     cb_back_date,
     cb_back_main,
     cb_back_name,
@@ -35,7 +32,7 @@ from handlers.booking import (
     cmd_book,
 )
 from handlers.client import cb_cancel_ask, cb_cancel_confirm, cb_menu, cb_my_bookings, cmd_my_bookings, cmd_start
-from reminders import post_init, post_shutdown
+from states import CONFIRM, ENTER_NAME, ENTER_PHONE, SELECT_DATE, SELECT_SERVICE, SELECT_TIME
 
 _fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 _console = logging.StreamHandler()
@@ -74,6 +71,33 @@ async def error_handler(update: object, context) -> None:
     logger.error("Unhandled exception for update %s:", update, exc_info=context.error)
 
 
+async def _post_init(app: Application) -> None:
+    if app.job_queue is None:
+        logger.warning("JobQueue not available — reminders will not be sent.")
+        return
+    try:
+        bookings = await asyncio.to_thread(database.get_all_upcoming_bookings)
+        count = 0
+        for b in bookings:
+            reminders.schedule_reminder(app, b.id, b.user_id, b.service, b.date, b.time)
+            count += 1
+        if count:
+            logger.info("Rescheduled %d reminder(s) after restart.", count)
+    except Exception:
+        logger.exception("Failed to reschedule reminders on startup — bot will still run.")
+    app.job_queue.run_repeating(reminders.daily_cleanup, interval=86400, first=0, name="daily_cleanup")
+    await app.bot.set_my_commands([
+        BotCommand("start", "Главное меню"),
+        BotCommand("book", "Записаться"),
+        BotCommand("mybookings", "Мои записи"),
+    ])
+
+
+async def _post_shutdown(app: Application) -> None:
+    database.close_pool()
+    logger.warning("Bot shut down.")
+
+
 def main() -> None:
     _validate_env()
     database.init_db()
@@ -81,8 +105,8 @@ def main() -> None:
     app = (
         Application.builder()
         .token(BOT_TOKEN)
-        .post_init(post_init)
-        .post_shutdown(post_shutdown)
+        .post_init(_post_init)
+        .post_shutdown(_post_shutdown)
         .connect_timeout(30)
         .read_timeout(30)
         .write_timeout(30)
@@ -142,7 +166,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(cb_owner_cancel_confirm, pattern=r"^owner_cancel:"))
     app.add_handler(CallbackQueryHandler(cb_menu, pattern="^menu$"))
 
-    logger.info("Бот v2 запущен...")
+    logger.info("Бот запущен...")
     app.run_polling(drop_pending_updates=True)
 
 

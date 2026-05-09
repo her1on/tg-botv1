@@ -3,7 +3,6 @@ from zoneinfo import ZoneInfo
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-import database
 from config import OWNER_IDS, SERVICES, TIME_SLOTS, TIMEZONE, WORKING_DAYS
 
 
@@ -50,8 +49,7 @@ def dates_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def times_kb(date_str: str) -> InlineKeyboardMarkup:
-    booked = set(database.get_booked_times(date_str))
+def times_kb(date_str: str, booked: set[str]) -> InlineKeyboardMarkup:
     rows, row = [], []
     for slot in TIME_SLOTS:
         if slot in booked:
