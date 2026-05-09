@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-OWNER_ID: int = int(os.getenv("OWNER_ID", "0"))
+DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+OWNER_IDS: list[int] = [int(x.strip()) for x in os.getenv("OWNER_IDS", os.getenv("OWNER_ID", "0")).split(",")]
 SALON_NAME: str = os.getenv("SALON_NAME", "Салон красоты")
 TIMEZONE: str = os.getenv("TIMEZONE", "Europe/Moscow")
 WORKING_DAYS: list[int] = [int(d.strip()) for d in os.getenv("WORKING_DAYS", "0,1,2,3,4,5").split(",")]

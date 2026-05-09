@@ -1,136 +1,159 @@
 import os
-import sqlite3
-from datetime import datetime
+from contextlib import contextmanager
+from datetime import datetime, timezone
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bookings.db")
+import psycopg2
+import psycopg2.pool
+
+from models import Booking
+
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+_pool: psycopg2.pool.SimpleConnectionPool | None = None
+
+
+def _get_pool() -> psycopg2.pool.SimpleConnectionPool:
+    global _pool
+    if _pool is None:
+        _pool = psycopg2.pool.SimpleConnectionPool(1, 5, DATABASE_URL)
+    return _pool
+
+
+@contextmanager
+def _conn():
+    pool = _get_pool()
+    conn = pool.getconn()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        pool.putconn(conn)
 
 
 def init_db() -> None:
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS bookings (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id     INTEGER NOT NULL,
-                username    TEXT,
-                full_name   TEXT,
-                phone       TEXT,
-                service     TEXT NOT NULL,
-                date        TEXT NOT NULL,
-                time        TEXT NOT NULL,
-                created_at  TEXT NOT NULL,
-                UNIQUE(date, time)
-            )
-        """)
-        # Migration: add phone column to existing databases
-        try:
-            conn.execute("ALTER TABLE bookings ADD COLUMN phone TEXT DEFAULT ''")
-        except sqlite3.OperationalError:
-            pass
-        conn.commit()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS bookings (
+                    id         SERIAL PRIMARY KEY,
+                    user_id    BIGINT  NOT NULL,
+                    username   TEXT    NOT NULL DEFAULT '',
+                    full_name  TEXT    NOT NULL DEFAULT '',
+                    phone      TEXT    NOT NULL DEFAULT '',
+                    service    TEXT    NOT NULL,
+                    date       DATE    NOT NULL,
+                    time       TEXT    NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL,
+                    UNIQUE(date, time)
+                )
+            """)
+
+
+def _row_to_booking(row: tuple) -> Booking:
+    return Booking(
+        id=row[0], user_id=row[1], service=row[2],
+        date=str(row[3]), time=row[4], full_name=row[5],
+        username=row[6], phone=row[7],
+    )
 
 
 def add_booking(
-    user_id: int,
-    username: str,
-    full_name: str,
-    phone: str,
-    service: str,
-    date: str,
-    time: str,
+    user_id: int, username: str, full_name: str, phone: str,
+    service: str, date: str, time: str,
 ) -> int | None:
-    """Insert a booking. Returns new row id, or None if the slot is taken."""
     try:
-        with sqlite3.connect(DB_PATH, timeout=10) as conn:
-            cur = conn.execute(
-                """
-                INSERT INTO bookings (user_id, username, full_name, phone, service, date, time, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (user_id, username, full_name, phone, service, date, time, datetime.now().isoformat()),
-            )
-            conn.commit()
-            return cur.lastrowid
-    except sqlite3.IntegrityError:
+        with _conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO bookings
+                       (user_id, username, full_name, phone, service, date, time, created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                    (user_id, username, full_name, phone, service, date, time,
+                     datetime.now(timezone.utc)),
+                )
+                return cur.fetchone()[0]
+    except psycopg2.IntegrityError:
         return None
 
 
-def get_user_bookings(user_id: int) -> list[tuple]:
-    """Return upcoming bookings for this user."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        cur = conn.execute(
-            """
-            SELECT id, service, date, time FROM bookings
-            WHERE user_id = ? AND date >= date('now')
-            ORDER BY date, time
-            """,
-            (user_id,),
-        )
-        return cur.fetchall()
-
-
-def get_all_upcoming_bookings() -> list[tuple]:
-    """Return all upcoming bookings for the owner."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        cur = conn.execute(
-            """
-            SELECT id, full_name, username, phone, service, date, time FROM bookings
-            WHERE date >= date('now')
-            ORDER BY date, time
-            """
-        )
-        return cur.fetchall()
-
-
-def get_booking_by_id(booking_id: int) -> tuple | None:
-    """Return a single booking row: (id, user_id, service, date, time, full_name, username, phone)."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        cur = conn.execute(
-            "SELECT id, user_id, service, date, time, full_name, username, phone FROM bookings WHERE id = ?",
-            (booking_id,),
-        )
-        return cur.fetchone()
-
-
-def cancel_booking(booking_id: int, user_id: int | None = None) -> tuple | None:
-    """Delete a booking and return its data. Pass user_id to verify ownership."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        if user_id is not None:
-            cur = conn.execute(
-                "SELECT id, user_id, service, date, time, full_name, username, phone FROM bookings WHERE id = ? AND user_id = ?",
-                (booking_id, user_id),
+def get_user_bookings(user_id: int) -> list[Booking]:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, user_id, service, date, time, full_name, username, phone
+                   FROM bookings WHERE user_id = %s AND date >= CURRENT_DATE
+                   ORDER BY date, time""",
+                (user_id,),
             )
-        else:
-            cur = conn.execute(
-                "SELECT id, user_id, service, date, time, full_name, username, phone FROM bookings WHERE id = ?",
+            return [_row_to_booking(r) for r in cur.fetchall()]
+
+
+def get_all_upcoming_bookings() -> list[Booking]:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, user_id, service, date, time, full_name, username, phone
+                   FROM bookings WHERE date >= CURRENT_DATE ORDER BY date, time"""
+            )
+            return [_row_to_booking(r) for r in cur.fetchall()]
+
+
+def get_booking_by_id(booking_id: int) -> Booking | None:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, user_id, service, date, time, full_name, username, phone
+                   FROM bookings WHERE id = %s""",
                 (booking_id,),
             )
-        booking = cur.fetchone()
-        if not booking:
-            return None
-        conn.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
-        conn.commit()
-        return booking
+            row = cur.fetchone()
+            return _row_to_booking(row) if row else None
 
 
-def get_all_for_reminder_reschedule() -> list[tuple]:
-    """Return (id, user_id, service, date, time) for all upcoming bookings."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        cur = conn.execute(
-            "SELECT id, user_id, service, date, time FROM bookings WHERE date >= date('now') ORDER BY date, time"
-        )
-        return cur.fetchall()
-
-
-def cleanup_old_bookings() -> int:
-    """Delete bookings older than 45 days. Returns number of deleted rows."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        cur = conn.execute("DELETE FROM bookings WHERE date < date('now', '-45 days')")
-        conn.commit()
-        return cur.rowcount
+def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | None:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            if user_id is not None:
+                cur.execute(
+                    """SELECT id, user_id, service, date, time, full_name, username, phone
+                       FROM bookings WHERE id = %s AND user_id = %s""",
+                    (booking_id, user_id),
+                )
+            else:
+                cur.execute(
+                    """SELECT id, user_id, service, date, time, full_name, username, phone
+                       FROM bookings WHERE id = %s""",
+                    (booking_id,),
+                )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cur.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
+    return _row_to_booking(row)
 
 
 def get_booked_times(date: str) -> list[str]:
-    """Return all taken time slots for a given date."""
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
-        cur = conn.execute("SELECT time FROM bookings WHERE date = ?", (date,))
-        return [row[0] for row in cur.fetchall()]
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT time FROM bookings WHERE date = %s", (date,))
+            return [r[0] for r in cur.fetchall()]
+
+
+def get_all_for_reminder_reschedule() -> list[Booking]:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, user_id, service, date, time, full_name, username, phone
+                   FROM bookings WHERE date >= CURRENT_DATE ORDER BY date, time"""
+            )
+            return [_row_to_booking(r) for r in cur.fetchall()]
+
+
+def cleanup_old_bookings() -> int:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM bookings WHERE date < CURRENT_DATE - INTERVAL '45 days'")
+            return cur.rowcount
