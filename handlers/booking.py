@@ -123,7 +123,17 @@ async def cb_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     user = update.effective_user
     ud = context.user_data
-    service, date_str, time_str, phone = ud["service"], ud["date"], ud["time"], ud["phone"]
+    service = ud.get("service")
+    date_str = ud.get("date")
+    time_str = ud.get("time")
+    phone = ud.get("phone")
+    if not all([service, date_str, time_str, phone]):
+        await query.edit_message_text(
+            "Что-то пошло не так. Пожалуйста, начните запись заново.",
+            reply_markup=main_menu_kb(user.id),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
     name = ud.get("name", user.full_name)
 
     booking_id = database.add_booking(

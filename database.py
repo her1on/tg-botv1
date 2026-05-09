@@ -9,14 +9,21 @@ from models import Booking
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-_pool: psycopg2.pool.SimpleConnectionPool | None = None
+_pool: psycopg2.pool.ThreadedConnectionPool | None = None
 
 
-def _get_pool() -> psycopg2.pool.SimpleConnectionPool:
+def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     global _pool
     if _pool is None:
-        _pool = psycopg2.pool.SimpleConnectionPool(1, 5, DATABASE_URL)
+        _pool = psycopg2.pool.ThreadedConnectionPool(1, 10, DATABASE_URL)
     return _pool
+
+
+def close_pool() -> None:
+    global _pool
+    if _pool is not None:
+        _pool.closeall()
+        _pool = None
 
 
 @contextmanager
@@ -118,21 +125,18 @@ def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | Non
         with conn.cursor() as cur:
             if user_id is not None:
                 cur.execute(
-                    """SELECT id, user_id, service, date, time, full_name, username, phone
-                       FROM bookings WHERE id = %s AND user_id = %s""",
+                    """DELETE FROM bookings WHERE id = %s AND user_id = %s
+                       RETURNING id, user_id, service, date, time, full_name, username, phone""",
                     (booking_id, user_id),
                 )
             else:
                 cur.execute(
-                    """SELECT id, user_id, service, date, time, full_name, username, phone
-                       FROM bookings WHERE id = %s""",
+                    """DELETE FROM bookings WHERE id = %s
+                       RETURNING id, user_id, service, date, time, full_name, username, phone""",
                     (booking_id,),
                 )
             row = cur.fetchone()
-            if not row:
-                return None
-            cur.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
-    return _row_to_booking(row)
+            return _row_to_booking(row) if row else None
 
 
 def get_booked_times(date: str) -> list[str]:
@@ -140,16 +144,6 @@ def get_booked_times(date: str) -> list[str]:
         with conn.cursor() as cur:
             cur.execute("SELECT time FROM bookings WHERE date = %s", (date,))
             return [r[0] for r in cur.fetchall()]
-
-
-def get_all_for_reminder_reschedule() -> list[Booking]:
-    with _conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """SELECT id, user_id, service, date, time, full_name, username, phone
-                   FROM bookings WHERE date >= CURRENT_DATE ORDER BY date, time"""
-            )
-            return [_row_to_booking(r) for r in cur.fetchall()]
 
 
 def cleanup_old_bookings() -> int:

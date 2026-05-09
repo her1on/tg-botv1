@@ -58,7 +58,7 @@ async def post_init(app: Application) -> None:
     if app.job_queue is None:
         logger.warning("JobQueue not available — reminders will not be sent.")
         return
-    bookings = database.get_all_for_reminder_reschedule()
+    bookings = database.get_all_upcoming_bookings()
     count = 0
     for b in bookings:
         schedule_reminder(app, b.id, b.user_id, b.service, b.date, b.time)
@@ -74,4 +74,5 @@ async def post_init(app: Application) -> None:
 
 
 async def post_shutdown(app: Application) -> None:
+    database.close_pool()
     logger.warning("Bot shut down.")

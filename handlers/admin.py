@@ -11,6 +11,38 @@ from utils import fmt_date
 
 logger = logging.getLogger(__name__)
 
+_MAX_MSG = 4000
+_MAX_BUTTONS = 40
+
+
+def _booking_lines(bookings: list) -> list[str]:
+    lines = []
+    current_date = None
+    for b in bookings:
+        if b.date != current_date:
+            current_date = b.date
+            lines.append(f"\n📅 {fmt_date(b.date)}")
+        uname = (
+            f"{b.full_name} (@{b.username})"
+            if b.username and b.full_name
+            else b.full_name or f"@{b.username}"
+        )
+        lines.append(f"  {b.time} — {b.service} | {uname} {b.phone}")
+    return lines
+
+
+def _split_text(header: str, lines: list[str]) -> list[str]:
+    chunks, current = [], header
+    for line in lines:
+        if len(current) + len(line) + 1 > _MAX_MSG:
+            chunks.append(current)
+            current = line
+        else:
+            current += "\n" + line
+    if current:
+        chunks.append(current)
+    return chunks
+
 
 async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id not in OWNER_IDS:
@@ -20,15 +52,9 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not bookings:
         await update.message.reply_text("Предстоящих записей нет.")
         return
-    current_date = None
-    lines = []
-    for b in bookings:
-        if b.date != current_date:
-            current_date = b.date
-            lines.append(f"\n📅 {fmt_date(b.date)}")
-        uname = f"{b.full_name} (@{b.username})" if b.username and b.full_name else b.full_name or f"@{b.username}"
-        lines.append(f"  {b.time} — {b.service} | {uname} {b.phone}")
-    await update.message.reply_text("Все предстоящие записи:" + "\n".join(lines))
+    chunks = _split_text("Все предстоящие записи:", _booking_lines(bookings))
+    for chunk in chunks:
+        await update.message.reply_text(chunk)
 
 
 async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -38,24 +64,23 @@ async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not bookings:
         await query.edit_message_text("Предстоящих записей нет.", reply_markup=back_to_menu_kb())
         return
-    current_date = None
-    lines = []
-    keyboard = []
-    for b in bookings:
-        if b.date != current_date:
-            current_date = b.date
-            lines.append(f"\n📅 {fmt_date(b.date)}")
-        uname = f"{b.full_name} (@{b.username})" if b.username and b.full_name else b.full_name or f"@{b.username}"
-        lines.append(f"  {b.time} — {b.service}\n  👤 {uname}  📞 {b.phone}")
-        keyboard.append([InlineKeyboardButton(
+
+    visible = bookings[:_MAX_BUTTONS]
+    lines = _booking_lines(visible)
+    if len(bookings) > _MAX_BUTTONS:
+        lines.append(f"\n...и ещё {len(bookings) - _MAX_BUTTONS} записей. Используйте /admin для полного списка.")
+
+    keyboard = [
+        [InlineKeyboardButton(
             f"❌ {fmt_date(b.date)} {b.time} — {b.service}",
             callback_data=f"owner_cancel_ask:{b.id}",
-        )])
+        )]
+        for b in visible
+    ]
     keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
-    await query.edit_message_text(
-        "Все предстоящие записи:\n" + "\n".join(lines),
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
+
+    text = "Все предстоящие записи:\n" + "\n".join(lines)
+    await query.edit_message_text(text[:_MAX_MSG], reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def cb_owner_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
