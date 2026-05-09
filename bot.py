@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from logging.handlers import RotatingFileHandler
 from zoneinfo import ZoneInfo
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -22,7 +23,7 @@ _fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 _console = logging.StreamHandler()
 _console.setLevel(logging.INFO)
 _console.setFormatter(_fmt)
-_file = logging.FileHandler("bot.log", encoding="utf-8")
+_file = RotatingFileHandler("bot.log", maxBytes=5_000_000, backupCount=3, encoding="utf-8")
 _file.setLevel(logging.WARNING)
 _file.setFormatter(_fmt)
 logging.root.setLevel(logging.INFO)
@@ -531,6 +532,12 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error("Unhandled exception for update %s:", update, exc_info=context.error)
 
 
+async def _daily_cleanup(context: ContextTypes.DEFAULT_TYPE) -> None:
+    deleted = database.cleanup_old_bookings()
+    if deleted:
+        logger.info("Cleanup: removed %d booking(s) older than 45 days.", deleted)
+
+
 async def post_init(app: Application) -> None:
     """On restart, reschedule reminders for all bookings still in the future."""
     if app.job_queue is None:
@@ -543,6 +550,7 @@ async def post_init(app: Application) -> None:
         count += 1
     if count:
         logger.info("Rescheduled %d reminder(s) after restart.", count)
+    app.job_queue.run_repeating(_daily_cleanup, interval=86400, first=0, name="daily_cleanup")
 
 
 async def post_shutdown(app: Application) -> None:

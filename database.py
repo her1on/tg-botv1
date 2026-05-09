@@ -121,6 +121,14 @@ def get_all_for_reminder_reschedule() -> list[tuple]:
         return cur.fetchall()
 
 
+def cleanup_old_bookings() -> int:
+    """Delete bookings older than 45 days. Returns number of deleted rows."""
+    with sqlite3.connect(DB_PATH, timeout=10) as conn:
+        cur = conn.execute("DELETE FROM bookings WHERE date < date('now', '-45 days')")
+        conn.commit()
+        return cur.rowcount
+
+
 def get_booked_times(date: str) -> list[str]:
     """Return all taken time slots for a given date."""
     with sqlite3.connect(DB_PATH, timeout=10) as conn:

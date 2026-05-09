@@ -4,3 +4,6 @@ bot_persistence*
 bot.log
 __pycache__/
 *.pyc
+v2/bot.log
+v2/__pycache__/
+v2/handlers/__pycache__/
