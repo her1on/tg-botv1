@@ -1,0 +1,6 @@
+.env
+*.db
+bot_persistence*
+bot.log
+__pycache__/
+*.pyc
