@@ -187,8 +187,12 @@ def mark_web_booking_notified(booking_id: str) -> None:
 def get_booked_times(date: str) -> list[str]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT time FROM bookings WHERE date = %s", (date,))
-            return [r["time"] for r in cur.fetchall()]
+            cur.execute("""
+                SELECT time FROM bookings WHERE date = %s
+                UNION
+                SELECT appointment_time::text FROM appointments WHERE appointment_date = %s
+            """, (date, date))
+            return [r["time"][:5] for r in cur.fetchall()]
 
 
 def cleanup_old_bookings() -> int:
