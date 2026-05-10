@@ -1,5 +1,6 @@
+import { supabase } from '../config/supabase.js';
 import { $, $$ } from '../utils/domHelpers.js';
-import { fmtDateFull } from '../utils/formatters.js';
+import { fmtDateFull, fmtDateISO } from '../utils/formatters.js';
 
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const DOW_LABELS = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
@@ -155,15 +156,30 @@ function renderCalendar() {
   }
 }
 
-function onDayClick(date) {
+async function onDayClick(date) {
   state.date = date;
   state.time = null;
   renderCalendar();
-  renderSlots();
+  await renderSlots();
   if (onChangeCallback) onChangeCallback();
 }
 
-function renderSlots() {
+async function fetchBookedSlots(dateISO) {
+  if (!supabase) return new Set();
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('appointment_time')
+      .eq('appointment_date', dateISO);
+    if (error) throw error;
+    return new Set(data.map((r) => String(r.appointment_time).slice(0, 5)));
+  } catch (err) {
+    console.error('[calendar] fetchBookedSlots error:', err);
+    return new Set();
+  }
+}
+
+async function renderSlots() {
   const grid = $('#slotGrid');
   const sub = $('#slotsSub');
   grid.innerHTML = '';
@@ -175,32 +191,37 @@ function renderSlots() {
 
   sub.textContent = fmtDateFull(state.date);
 
-  // TODO: replace with real API call — GET /api/taken-slots?date=YYYY-MM-DD
-  const seed = state.date.getDate();
-  ALL_SLOTS.forEach((time, i) => {
+  const placeholder = document.createElement('p');
+  placeholder.className = 'slots__loading';
+  placeholder.textContent = 'Загрузка…';
+  grid.appendChild(placeholder);
+
+  const takenSet = await fetchBookedSlots(fmtDateISO(state.date));
+  grid.innerHTML = '';
+
+  ALL_SLOTS.forEach((time) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'slot';
     btn.textContent = time;
 
-    const isTaken = (i + seed) % 4 === 1; // demo only
+    const isTaken = takenSet.has(time);
     if (isTaken) {
       btn.disabled = true;
       btn.setAttribute('aria-label', `${time} — занято`);
     } else {
       btn.setAttribute('aria-label', `Время ${time}`);
+      btn.addEventListener('click', () => {
+        state.time = time;
+        renderSlots();
+        if (onChangeCallback) onChangeCallback();
+      });
     }
 
-    if (state.time === time) {
+    if (state.time === time && !isTaken) {
       btn.classList.add('slot--active');
       btn.setAttribute('aria-pressed', 'true');
     }
-
-    btn.addEventListener('click', () => {
-      state.time = time;
-      renderSlots();
-      if (onChangeCallback) onChangeCallback();
-    });
 
     grid.appendChild(btn);
   });

@@ -38,18 +38,29 @@ CREATE TABLE appointments (
   owner_notified   boolean     DEFAULT false
 );
 
--- Optional: enable Row Level Security and allow inserts from anon
+-- Row Level Security
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+
+-- anon can insert new bookings
 CREATE POLICY "Allow public insert" ON appointments
   FOR INSERT TO anon WITH CHECK (true);
+
+-- anon can read appointment_time to show taken slots in the calendar
+-- (anon key is public by design; RLS is the security layer)
+CREATE POLICY "Allow public read" ON appointments
+  FOR SELECT TO anon USING (true);
 ```
 
-If the `appointments` table already exists, run this migration to add the new columns:
+If the `appointments` table already exists, run this migration to add the new columns and policies:
 
 ```sql
 ALTER TABLE appointments
   ADD COLUMN IF NOT EXISTS source         text    DEFAULT 'web',
   ADD COLUMN IF NOT EXISTS owner_notified boolean DEFAULT false;
+
+-- skip if policies already exist
+CREATE POLICY "Allow public read" ON appointments
+  FOR SELECT TO anon USING (true);
 ```
 
 ## Project structure
