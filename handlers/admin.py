@@ -144,10 +144,10 @@ async def cb_owner_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def cb_owner_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
     if update.effective_user.id not in OWNER_IDS:
         await query.answer("Нет доступа.", show_alert=True)
         return
+    await query.answer()
     booking_id = int(query.data.split(":")[1])
     booking = await asyncio.to_thread(database.cancel_booking, booking_id)
     if not booking:

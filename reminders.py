@@ -21,6 +21,7 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
                 f"⏰ Напоминание!\n\n"
                 f"Завтра у вас запись в {SALON_NAME}:\n\n"
                 f"Услуга: {data['service']}\n"
+                f"Дата: {fmt_date(data['date'])}\n"
                 f"Время: {data['time']}"
             ),
         )
@@ -59,8 +60,12 @@ async def check_web_bookings(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Notify owner about new bookings submitted via the website."""
     try:
         bookings = await asyncio.to_thread(database.get_unnotified_web_bookings)
-        for b in bookings:
-            # Mark first — prevents re-delivery even if notification fails
+    except Exception as exc:
+        logger.error("check_web_bookings: failed to fetch bookings: %s", exc)
+        return
+
+    for b in bookings:
+        try:
             await asyncio.to_thread(database.mark_web_booking_notified, b["id"])
             date_str = str(b["appointment_date"])
             time_str = str(b["appointment_time"])[:5]
@@ -75,5 +80,5 @@ async def check_web_bookings(context: ContextTypes.DEFAULT_TYPE) -> None:
             if b.get("notes"):
                 text += f"\nКомментарий: {b['notes']}"
             await notify_owner(context, text)
-    except Exception as exc:
-        logger.error("check_web_bookings failed: %s", exc)
+        except Exception as exc:
+            logger.error("check_web_bookings: failed for booking %s: %s", b.get("id"), exc)

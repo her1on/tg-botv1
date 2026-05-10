@@ -1,11 +1,12 @@
 import asyncio
 from datetime import date as date_type, datetime
+from zoneinfo import ZoneInfo
 
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 
 import database
-from config import SALON_NAME
+from config import SALON_NAME, TIMEZONE
 from keyboards import confirm_kb, dates_kb, main_menu_kb, name_kb, phone_kb, services_kb, times_kb
 from reminders import schedule_reminder
 from states import CONFIRM, ENTER_NAME, ENTER_PHONE, SELECT_DATE, SELECT_SERVICE, SELECT_TIME
@@ -38,7 +39,7 @@ async def cb_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     date_str = query.data.split(":", 1)[1]
     try:
         parsed = datetime.strptime(date_str, "%Y-%m-%d").date()
-        if parsed < date_type.today():
+        if parsed < datetime.now(ZoneInfo(TIMEZONE)).date():
             await query.answer("Эта дата уже прошла.", show_alert=True)
             return SELECT_DATE
     except ValueError:
