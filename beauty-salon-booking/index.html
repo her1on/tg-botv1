@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Maison Lumière — салон красоты и эстетики. Запишитесь онлайн: уход за лицом, окрашивание, маникюр, массаж." />
+  <meta property="og:title" content="Maison Lumière — салон красоты" />
+  <meta property="og:description" content="Тихий салон красоты, посвящённый мастерству и заботе. Онлайн-запись за 1 минуту." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="assets/images/placeholder.jpg" />
+
+  <title>Maison Lumière — салон красоты и эстетики</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/main.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="nav" id="nav" aria-label="Основная навигация">
+  <div class="container nav__inner">
+    <a href="#top" class="logo" aria-label="Maison Lumière — на главную">
+      <span class="logo__mark" aria-hidden="true"></span>
+      Maison Lumière
+    </a>
+    <div class="nav__links" id="navLinks" role="list">
+      <a href="#services" class="nav__link" role="listitem">Услуги</a>
+      <a href="#booking"  class="nav__link" role="listitem">Запись</a>
+      <a href="#about"    class="nav__link" role="listitem">О нас</a>
+      <a href="#contact"  class="nav__link" role="listitem">Контакты</a>
+      <a href="#booking"  class="nav__link nav__cta" role="listitem">Записаться</a>
+    </div>
+    <button class="nav__toggle" id="menuToggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="hero__bg" aria-hidden="true">
+    <div class="hero__blob hero__blob--one"></div>
+    <div class="hero__blob hero__blob--two"></div>
+    <div class="hero__blob hero__blob--three"></div>
+  </div>
+  <div class="container hero__inner">
+    <div class="hero__copy">
+      <span class="eyebrow">Салон красоты · с 2014 года</span>
+      <h1>
+        Где каждая<br />
+        деталь становится<br />
+        <span class="italic">искусством.</span>
+      </h1>
+      <p class="hero__lede">
+        Тихий уголок города, посвящённый искусству красоты —
+        индивидуальные процедуры, безупречное мастерство и забота,
+        которой вы заслуживаете.
+      </p>
+      <div class="hero__actions">
+        <a href="#booking" class="btn btn--primary">
+          Записаться на визит <span class="btn__arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="#services" class="btn btn--ghost">
+          Смотреть услуги
+        </a>
+      </div>
+      <div class="hero__stats" aria-label="Наши достижения">
+        <div class="hero__stat">
+          <strong>12+</strong>
+          <span>Лет мастерства</span>
+        </div>
+        <div class="hero__stat">
+          <strong>4.9</strong>
+          <span>Оценка гостей</span>
+        </div>
+        <div class="hero__stat">
+          <strong>20К</strong>
+          <span>Визитов</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero__visual" aria-hidden="true">
+      <div class="hero-card hero-card--main">
+        <p class="hero-card__quote">«Не торопитесь. Останьтесь.<br />Вы именно там, где должны быть.»</p>
+      </div>
+      <div class="hero-card hero-card--float">
+        <div class="hero-card__row">
+          <span class="hero-card__label">Ближайшее время</span>
+        </div>
+        <div class="hero-card__row">
+          <strong class="hero-card__value">Сегодня · 14:30</strong>
+          <span style="color: var(--color-gold-deep); font-size: 12px;">●</span>
+        </div>
+        <div class="hero-card__divider"></div>
+        <div class="hero-card__row">
+          <span class="hero-card__label">Фирменный уход</span>
+          <strong class="hero-card__value">9 800 ₽</strong>
+        </div>
+      </div>
+      <div class="hero-card hero-card--badge">
+        Лучший<br />салон<br />2025
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ SERVICES ============ -->
+<section class="services" id="services" aria-labelledby="services-heading">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow eyebrow--center">Наши услуги</span>
+      <h2 id="services-heading">Процедуры, <em>созданные с заботой.</em></h2>
+      <p>Каждую услугу проводит опытный мастер, используя проверенные косметические средства небольших марок. Выберите одну, чтобы начать.</p>
+    </div>
+    <div class="services__grid" id="servicesGrid" role="list" aria-label="Список услуг"></div>
+  </div>
+</section>
+
+<!-- ============ BOOKING ============ -->
+<section class="booking" id="booking" aria-labelledby="booking-heading">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow eyebrow--center" style="color: var(--color-gold);">Запись на визит</span>
+      <h2 id="booking-heading" style="color: var(--color-cream);">Несколько деталей — <em>и вы записаны.</em></h2>
+      <p>Запись занимает меньше минуты. Подтверждение пришлём по СМС.</p>
+    </div>
+
+    <nav class="stepper" id="stepper" aria-label="Шаги записи">
+      <div class="step-pill step-pill--active" data-step="1" aria-current="step"><span class="step-pill__num" aria-hidden="true">1</span> Услуга</div>
+      <div class="step-pill" data-step="2"><span class="step-pill__num" aria-hidden="true">2</span> Дата и время</div>
+      <div class="step-pill" data-step="3"><span class="step-pill__num" aria-hidden="true">3</span> Контакты</div>
+      <div class="step-pill" data-step="4"><span class="step-pill__num" aria-hidden="true">4</span> Готово</div>
+    </nav>
+
+    <div class="booking-panel">
+
+      <!-- Step 1: Choose service -->
+      <div class="step-panel step-panel--active" data-panel="1" role="region" aria-labelledby="step1-title">
+        <h3 class="step-panel__title" id="step1-title">Выберите процедуру</h3>
+        <p class="step-panel__sub">Нажмите на услугу, чтобы продолжить.</p>
+        <div class="svc-options" id="svcOptions" role="group" aria-label="Выбор услуги"></div>
+        <div class="step-actions">
+          <button class="step-btn--back" disabled aria-hidden="true">← Назад</button>
+          <button class="step-btn--next" id="next1" disabled aria-label="Перейти к выбору даты">
+            Продолжить <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Date & time -->
+      <div class="step-panel" data-panel="2" role="region" aria-labelledby="step2-title">
+        <h3 class="step-panel__title" id="step2-title">Выберите дату и время</h3>
+        <p class="step-panel__sub">Свободные окна показаны для выбранной даты.</p>
+        <div class="step-2-grid">
+          <div class="calendar" role="application" aria-label="Календарь">
+            <div class="calendar__head">
+              <h4 class="calendar__month" id="calMonth" aria-live="polite">Май 2026</h4>
+              <div class="calendar__nav">
+                <button class="calendar__nav-btn" id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+                <button class="calendar__nav-btn" id="nextMonth" aria-label="Следующий месяц">›</button>
+              </div>
+            </div>
+            <div class="calendar__grid" id="calGrid" role="grid" aria-label="Дни месяца"></div>
+          </div>
+          <div class="slots" aria-labelledby="slots-title">
+            <h4 class="slots__title" id="slots-title">Свободное время</h4>
+            <p class="slots__sub" id="slotsSub" aria-live="polite">Выберите дату</p>
+            <div class="slot-grid" id="slotGrid" role="group" aria-label="Доступное время"></div>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button class="step-btn--back" data-back="2">← Назад</button>
+          <button class="step-btn--next" id="next2" disabled aria-label="Перейти к вводу контактов">
+            Продолжить <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Contact details -->
+      <div class="step-panel" data-panel="3" role="region" aria-labelledby="step3-title">
+        <h3 class="step-panel__title" id="step3-title">Ваши контакты</h3>
+        <p class="step-panel__sub">Мы используем их только для подтверждения и напоминания о визите.</p>
+
+        <div class="review-summary" id="reviewSummary" aria-label="Сводка записи"></div>
+
+        <form class="form-grid" id="bookingForm" novalidate aria-label="Форма контактных данных">
+          <div class="field">
+            <label class="field__label" for="name">Имя и фамилия</label>
+            <input
+              class="field__input"
+              type="text"
+              id="name"
+              name="name"
+              placeholder="Анна Иванова"
+              autocomplete="name"
+              required
+              aria-required="true"
+              aria-describedby="name-error"
+            />
+            <span class="field__error-msg" id="name-error" role="alert">Пожалуйста, укажите имя.</span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="phone">Номер телефона</label>
+            <input
+              class="field__input"
+              type="tel"
+              id="phone"
+              name="phone"
+              placeholder="+7 (999) 123-45-67"
+              autocomplete="tel"
+              required
+              aria-required="true"
+              aria-describedby="phone-error"
+            />
+            <span class="field__error-msg" id="phone-error" role="alert">Пожалуйста, укажите корректный номер.</span>
+          </div>
+          <div class="field field--full">
+            <label class="field__label" for="notes">Комментарий (необязательно)</label>
+            <textarea
+              class="field__textarea"
+              id="notes"
+              name="notes"
+              rows="2"
+              placeholder="Что нам важно знать — аллергии, предпочтения, парковка…"
+            ></textarea>
+          </div>
+        </form>
+
+        <div class="step-actions">
+          <button class="step-btn--back" data-back="3">← Назад</button>
+          <button class="step-btn--next" id="submitBooking" aria-label="Подтвердить запись">
+            Подтвердить запись <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Confirmation -->
+      <div class="step-panel" data-panel="4" role="region" aria-labelledby="step4-title">
+        <div class="confirm-card">
+          <div class="confirm-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h3 class="confirm-card__title" id="step4-title">Ваша запись подтверждена</h3>
+          <p class="confirm-card__desc">Подтверждение отправлено на ваш телефон. Будем рады вас видеть.</p>
+          <div class="summary" id="finalSummary" aria-label="Детали записи"></div>
+          <div class="confirm-card__actions">
+            <button class="btn btn--primary" id="restartBtn">Записаться ещё</button>
+            <a href="#top" class="btn btn--ghost">Наверх</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.booking-panel -->
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section class="about" id="about" aria-labelledby="about-heading">
+  <div class="container about__grid">
+    <div class="about__photo" role="img" aria-label="Портрет основательницы Элоди Маршан">
+      <span class="about__photo-tag" aria-hidden="true">// портрет основательницы</span>
+      <p class="about__signature">— Элоди Маршан,<br />основательница и ведущий косметолог</p>
+    </div>
+    <div class="about__copy">
+      <span class="eyebrow">Наша история</span>
+      <h2 id="about-heading">Небольшой дом, <em>с бережным подходом.</em></h2>
+      <p>
+        Maison Lumière начался с одной комнаты над цветочной лавкой на улице Сен-Пьер.
+        Через двенадцать лет мы остались верны той же идее: небольшой салон,
+        сосредоточенный на деле и без спешки. Два кабинета. Шесть мастеров.
+        Каждого гостя знаем по имени.
+      </p>
+      <p>
+        Мы работаем с растительными формулами и инструментами, которых не найти
+        в сетевых салонах — выбранными за то, как они чувствуются на коже,
+        а не за то, как выглядят на полке.
+      </p>
+      <dl class="about__stats">
+        <div class="about__stat">
+          <strong>2</strong>
+          <span>Кабинета</span>
+        </div>
+        <div class="about__stat">
+          <strong>6</strong>
+          <span>Мастеров</span>
+        </div>
+        <div class="about__stat">
+          <strong>100%</strong>
+          <span>Без тестов на животных</span>
+        </div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer" id="contact" aria-label="Контакты и информация">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <div class="logo" aria-hidden="true">
+          <span class="logo__mark"></span>
+          Maison Lumière
+        </div>
+        <p>Тихий салон красоты, посвящённый мастерству, уюту и маленьким ритуалам, которые делают день лучше.</p>
+      </div>
+      <div class="footer__col">
+        <h5 class="footer__col-title">Адрес</h5>
+        <ul>
+          <li>ул. Большая Никитская, 14</li>
+          <li>2-й этаж, кабинет 2Б</li>
+          <li>Москва, 125009</li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h5 class="footer__col-title">Часы работы</h5>
+        <ul>
+          <li>Вт – Пт · 10:00 — 21:00</li>
+          <li>Суббота · 09:00 — 20:00</li>
+          <li>Вс – Пн · выходной</li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h5 class="footer__col-title">Связаться</h5>
+        <ul>
+          <li><a href="tel:+74951234567">+7 (495) 123-45-67</a></li>
+          <li><a href="mailto:hello@maisonlumiere.ru">hello@maisonlumiere.ru</a></li>
+          <li><a href="https://instagram.com/maisonlumiere" target="_blank" rel="noopener noreferrer">@maisonlumiere</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 Maison Lumière · Все права защищены.</span>
+      <div class="footer__socials">
+        <a href="https://instagram.com/maisonlumiere" target="_blank" rel="noopener noreferrer" class="footer__social-link" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+            <circle cx="12" cy="12" r="4"></circle>
+            <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"></circle>
+          </svg>
+        </a>
+        <a href="#" class="footer__social-link" aria-label="Pinterest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M11 8.5c-2 0-3 1.4-3 2.9 0 .9.4 1.7 1 2 .1 0 .2 0 .2-.1l.2-.7c0-.1 0-.2-.1-.3-.3-.3-.5-.8-.5-1.4 0-1.5 1.1-2.8 2.9-2.8 1.6 0 2.5 1 2.5 2.3 0 1.7-.8 3.2-1.9 3.2-.6 0-1.1-.5-.9-1.2.2-.8.6-1.6.6-2.2 0-.5-.3-.9-.8-.9-.7 0-1.2.7-1.2 1.6 0 .6.2 1 .2 1l-.8 3.4c-.2 1 0 2.2 0 2.3 0 .1.1.1.2.1.1-.1.9-1.1 1.2-2.1l.5-1.8c.2.5.9.9 1.6.9 2.1 0 3.5-1.9 3.5-4.5 0-1.9-1.6-3.7-4.4-3.7Z"/>
+          </svg>
+        </a>
+        <a href="#" class="footer__social-link" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M16.5 3a4.5 4.5 0 0 0 4.2 4.4v2.4a6.9 6.9 0 0 1-4.2-1.4v6.4a5.4 5.4 0 1 1-5.4-5.4c.3 0 .5 0 .8.1v2.5a3 3 0 1 0 2.1 2.8V3h2.5Z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

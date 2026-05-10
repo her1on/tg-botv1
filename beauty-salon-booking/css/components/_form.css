@@ -1,0 +1,126 @@
+/* ---- Booking form fields ---- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field--full {
+  grid-column: 1 / -1;
+}
+
+.field__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-charcoal-soft);
+  font-weight: 500;
+}
+
+.field__input,
+.field__textarea {
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--color-charcoal);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  width: 100%;
+}
+
+.field__input:focus,
+.field__textarea:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  background: var(--color-cream-warm);
+}
+
+.field--error .field__input,
+.field--error .field__textarea {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.field__error-msg {
+  font-size: 12px;
+  color: var(--color-error);
+  display: none;
+}
+
+.field--error .field__error-msg {
+  display: block;
+}
+
+/* ---- Service option list (step 1) ---- */
+.svc-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.svc-option {
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-hairline);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.svc-option:hover {
+  border-color: var(--color-charcoal);
+}
+
+.svc-option--active {
+  border-color: var(--color-gold);
+  background: var(--color-cream-warm);
+}
+
+.svc-option__name {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.svc-option__meta {
+  font-size: 12px;
+  color: var(--color-charcoal-soft);
+  margin-top: 2px;
+}
+
+.svc-option__price {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ---- Submit status ---- */
+.submit-status {
+  font-size: 13px;
+  color: var(--color-charcoal-soft);
+  margin-top: 12px;
+  text-align: center;
+}
+
+.submit-status--error {
+  color: var(--color-error);
+}
+
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .svc-options { grid-template-columns: 1fr; }
+}

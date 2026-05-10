@@ -1,0 +1,46 @@
+:root {
+  /* Colors */
+  --color-rose: #F2C4CE;
+  --color-rose-deep: #E5A9B6;
+  --color-cream: #FFF8F0;
+  --color-cream-warm: #F8EFE2;
+  --color-charcoal: #2C2C2C;
+  --color-charcoal-soft: #4A4A4A;
+  --color-gold: #C9A96E;
+  --color-gold-deep: #A8884F;
+  --color-error: #C8553D;
+  --color-error-bg: #FBEDEA;
+
+  --color-hairline: rgba(44, 44, 44, 0.12);
+  --color-hairline-soft: rgba(44, 44, 44, 0.06);
+
+  /* Typography */
+  --font-serif: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+
+  /* Spacing */
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 32px;
+  --space-lg: 56px;
+  --space-xl: 80px;
+  --space-2xl: 130px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-full: 999px;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-md: 0.35s ease;
+
+  /* Layout */
+  --container-max: 1240px;
+  --container-pad: 32px;
+
+  /* Nav */
+  --nav-height: 72px;
+}

@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+@import './base/_variables.css';
+@import './base/_reset.css';
+@import './base/_typography.css';
+
+@import './components/_buttons.css';
+@import './components/_cards.css';
+@import './components/_form.css';
+@import './components/_modal.css';
+
+@import './sections/_nav.css';
+@import './sections/_hero.css';
+@import './sections/_services.css';
+@import './sections/_booking.css';
+@import './sections/_about.css';
+@import './sections/_footer.css';
