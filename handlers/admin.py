@@ -113,11 +113,14 @@ async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )]
         for b in visible
     ]
-    for a in appointments:
+    visible_appointments = appointments[:_MAX_BUTTONS]
+    for a in visible_appointments:
         keyboard.append([InlineKeyboardButton(
             f"🌐 ❌ {fmt_date(str(a['appointment_date']))} {str(a['appointment_time'])[:5]} — {a['service']}",
             callback_data=f"owner_cancel_web_ask:{a['id']}",
         )])
+    if len(appointments) > _MAX_BUTTONS:
+        lines.append(f"\n...и ещё {len(appointments) - _MAX_BUTTONS} веб-записей. Используйте /admin для полного списка.")
     keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
 
     text = "\n".join(lines)
