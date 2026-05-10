@@ -148,6 +148,7 @@ function renderSlots() {
 
   sub.textContent = fmtDateFull(state.date);
 
+  // TODO: replace with real API call — GET /api/taken-slots?date=YYYY-MM-DD
   const seed = state.date.getDate();
   ALL_SLOTS.forEach((time, i) => {
     const btn = document.createElement('button');
@@ -156,7 +157,7 @@ function renderSlots() {
     btn.textContent = time;
     btn.setAttribute('aria-label', `Время ${time}`);
 
-    const isTaken = (i + seed) % 4 === 1;
+    const isTaken = (i + seed) % 4 === 1; // demo only
     if (isTaken) {
       btn.disabled = true;
       btn.setAttribute('aria-label', `${time} — занято`);

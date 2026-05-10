@@ -1,4 +1,4 @@
-import { initServices, selectService } from './modules/services.js';
+import { initServices } from './modules/services.js';
 import { initCalendar, getSelectedDate, getSelectedTime } from './modules/calendar.js';
 import { initBooking, setStep1Continue, setStep2Continue } from './modules/booking.js';
 

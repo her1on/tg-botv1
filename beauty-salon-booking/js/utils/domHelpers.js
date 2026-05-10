@@ -32,3 +32,17 @@ export const setBtn = (btn, disabled, html) => {
   btn.disabled = disabled;
   if (html !== undefined) btn.innerHTML = html;
 };
+
+/**
+ * Escape user-supplied strings before inserting into innerHTML.
+ * Prevents XSS when building HTML from untrusted input.
+ * @param {string} str
+ * @returns {string}
+ */
+export const escapeHtml = (str) =>
+  String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');

@@ -1,12 +1,10 @@
 import { supabase } from '../config/supabase.js';
-import { $, $$, setBtn } from '../utils/domHelpers.js';
+import { $, $$, setBtn, escapeHtml } from '../utils/domHelpers.js';
 import { validateName, validatePhone } from '../utils/validation.js';
 import { fmtPrice, fmtDateLong, fmtDateShort, fmtDateISO } from '../utils/formatters.js';
 import { notify } from './notifications.js';
 import { getSelectedService, resetService } from './services.js';
 import { getSelectedDate, getSelectedTime, resetCalendar } from './calendar.js';
-
-let currentStep = 1;
 
 /**
  * Initialize the multi-step booking form: wire up all step navigation and submission.
@@ -60,8 +58,6 @@ export function setStep2Continue(enabled) {
 // ---------- private ----------
 
 function advance(step, onStepChange) {
-  currentStep = step;
-
   $$('.step-panel').forEach((p) => {
     p.classList.toggle('step-panel--active', parseInt(p.dataset.panel, 10) === step);
   });
@@ -159,19 +155,19 @@ function renderFinalSummary(svc, date, time, name, phone) {
   $('#finalSummary').innerHTML = `
     <div class="summary__row">
       <span class="summary__label">Гость</span>
-      <span class="summary__value">${name}</span>
+      <span class="summary__value">${escapeHtml(name)}</span>
     </div>
     <div class="summary__row">
       <span class="summary__label">Телефон</span>
-      <span class="summary__value">${phone}</span>
+      <span class="summary__value">${escapeHtml(phone)}</span>
     </div>
     <div class="summary__row">
       <span class="summary__label">Услуга</span>
-      <span class="summary__value">${svc.name}</span>
+      <span class="summary__value">${escapeHtml(svc.name)}</span>
     </div>
     <div class="summary__row">
       <span class="summary__label">Когда</span>
-      <span class="summary__value">${fmtDateLong(date)} · ${time}</span>
+      <span class="summary__value">${escapeHtml(fmtDateLong(date))} · ${escapeHtml(time)}</span>
     </div>
     <div class="summary__row summary__row--total">
       <span class="summary__label">Итого</span>
