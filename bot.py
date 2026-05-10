@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 
 _error_counts: dict[str, int] = defaultdict(int)
 _ALERT_THRESHOLD = 3
+_bg_tasks: set[asyncio.Task] = set()
 
 
 def _validate_env() -> None:
@@ -119,7 +120,9 @@ async def _post_init(app: Application) -> None:
         logger.exception("Failed to reschedule reminders on startup — bot will still run.")
     app.job_queue.run_repeating(reminders.daily_cleanup, interval=86400, first=3600, name="daily_cleanup")
     app.job_queue.run_repeating(reminders.check_web_bookings, interval=600, first=60, name="check_web_bookings")
-    asyncio.create_task(pg_listener.listen_appointments(app), name="pg_listener")
+    task = asyncio.create_task(pg_listener.listen_appointments(app), name="pg_listener")
+    _bg_tasks.add(task)
+    task.add_done_callback(_bg_tasks.discard)
     await app.bot.set_my_commands([
         BotCommand("start", "Главное меню"),
         BotCommand("book", "Записаться"),
@@ -128,6 +131,8 @@ async def _post_init(app: Application) -> None:
 
 
 async def _post_shutdown(app: Application) -> None:
+    for task in list(_bg_tasks):
+        task.cancel()
     database.close_pool()
     logger.warning("Bot shut down.")
 

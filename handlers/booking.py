@@ -5,6 +5,7 @@ from time import monotonic
 from zoneinfo import ZoneInfo
 
 from telegram import Update
+from telegram.error import BadRequest
 from telegram.ext import ContextTypes, ConversationHandler
 
 import database
@@ -116,13 +117,17 @@ async def cb_name_entered(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
     name_msg_id = context.user_data.get("name_msg_id")
     if name_msg_id:
-        msg = await context.bot.edit_message_text(
-            chat_id=update.effective_chat.id,
-            message_id=name_msg_id,
-            text=text,
-            reply_markup=phone_kb(),
-        )
-        context.user_data["phone_msg_id"] = msg.message_id
+        try:
+            msg = await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=name_msg_id,
+                text=text,
+                reply_markup=phone_kb(),
+            )
+            context.user_data["phone_msg_id"] = msg.message_id
+        except BadRequest:
+            msg = await update.message.reply_text(text, reply_markup=phone_kb())
+            context.user_data["phone_msg_id"] = msg.message_id
     else:
         msg = await update.message.reply_text(text, reply_markup=phone_kb())
         context.user_data["phone_msg_id"] = msg.message_id
@@ -144,12 +149,15 @@ async def cb_phone_entered(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
     phone_msg_id = context.user_data.get("phone_msg_id")
     if phone_msg_id:
-        await context.bot.edit_message_text(
-            chat_id=update.effective_chat.id,
-            message_id=phone_msg_id,
-            text=text,
-            reply_markup=confirm_kb(),
-        )
+        try:
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=phone_msg_id,
+                text=text,
+                reply_markup=confirm_kb(),
+            )
+        except BadRequest:
+            await update.message.reply_text(text, reply_markup=confirm_kb())
     else:
         await update.message.reply_text(text, reply_markup=confirm_kb())
     return CONFIRM

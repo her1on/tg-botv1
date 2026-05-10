@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 _POLL_TIMEOUT = 5.0
 _RECONNECT_DELAY = 30.0
+_active_tasks: set[asyncio.Task] = set()
 
 
 async def _dispatch(record: dict, app) -> None:
@@ -46,6 +47,7 @@ async def _dispatch(record: dict, app) -> None:
 
 def _wait_notify(conn: psycopg2.extensions.connection) -> None:
     select.select([conn], [], [], _POLL_TIMEOUT)
+    conn.poll()
 
 
 async def listen_appointments(app) -> None:
@@ -61,12 +63,13 @@ async def listen_appointments(app) -> None:
 
             while True:
                 await asyncio.to_thread(_wait_notify, conn)
-                conn.poll()
                 while conn.notifies:
                     notify = conn.notifies.pop(0)
                     try:
                         record = json.loads(notify.payload)
-                        asyncio.create_task(_dispatch(record, app))
+                        task = asyncio.create_task(_dispatch(record, app))
+                        _active_tasks.add(task)
+                        task.add_done_callback(_active_tasks.discard)
                     except Exception as exc:
                         logger.error("pg_listener: bad payload: %s", exc)
 
