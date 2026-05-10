@@ -145,6 +145,20 @@ def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | Non
             return _row_to_booking(row) if row else None
 
 
+def get_all_upcoming_appointments() -> list[dict]:
+    """Return all upcoming web bookings from the appointments table."""
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT id, name, phone, service,
+                       appointment_date, appointment_time, notes
+                FROM appointments
+                WHERE appointment_date >= CURRENT_DATE
+                ORDER BY appointment_date, appointment_time
+            """)
+            return cur.fetchall()
+
+
 def get_unnotified_web_bookings() -> list[dict]:
     """Return web bookings (from appointments table) not yet notified to the owner."""
     with _conn() as conn:

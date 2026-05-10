@@ -32,6 +32,19 @@ def _booking_lines(bookings: list) -> list[str]:
     return lines
 
 
+def _appointment_lines(appointments: list) -> list[str]:
+    lines = []
+    current_date = None
+    for a in appointments:
+        date_str = str(a["appointment_date"])
+        if date_str != current_date:
+            current_date = date_str
+            lines.append(f"\n📅 {fmt_date(date_str)}")
+        time_str = str(a["appointment_time"])[:5]
+        lines.append(f"  {time_str} — {a['service']} | {a['name']} {a['phone']}")
+    return lines
+
+
 def _split_text(header: str, lines: list[str]) -> list[str]:
     chunks, current = [], header
     for line in lines:
@@ -49,27 +62,43 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id not in OWNER_IDS:
         await update.message.reply_text("У вас нет доступа.")
         return
-    bookings = await asyncio.to_thread(database.get_all_upcoming_bookings)
-    if not bookings:
+    bookings, appointments = await asyncio.gather(
+        asyncio.to_thread(database.get_all_upcoming_bookings),
+        asyncio.to_thread(database.get_all_upcoming_appointments),
+    )
+    if not bookings and not appointments:
         await update.message.reply_text("Предстоящих записей нет.")
         return
-    chunks = _split_text("Все предстоящие записи:", _booking_lines(bookings))
-    for chunk in chunks:
-        await update.message.reply_text(chunk)
+    messages = []
+    if bookings:
+        messages.extend(_split_text("🤖 Записи через бота:", _booking_lines(bookings)))
+    if appointments:
+        messages.extend(_split_text("🌐 Записи с сайта:", _appointment_lines(appointments)))
+    for msg in messages:
+        await update.message.reply_text(msg)
 
 
 async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
-    bookings = await asyncio.to_thread(database.get_all_upcoming_bookings)
-    if not bookings:
+    bookings, appointments = await asyncio.gather(
+        asyncio.to_thread(database.get_all_upcoming_bookings),
+        asyncio.to_thread(database.get_all_upcoming_appointments),
+    )
+    if not bookings and not appointments:
         await query.edit_message_text("Предстоящих записей нет.", reply_markup=back_to_menu_kb())
         return
 
     visible = bookings[:_MAX_BUTTONS]
-    lines = _booking_lines(visible)
-    if len(bookings) > _MAX_BUTTONS:
-        lines.append(f"\n...и ещё {len(bookings) - _MAX_BUTTONS} записей. Используйте /admin для полного списка.")
+    lines = []
+    if visible:
+        lines.append("🤖 Записи через бота:")
+        lines.extend(_booking_lines(visible))
+        if len(bookings) > _MAX_BUTTONS:
+            lines.append(f"\n...и ещё {len(bookings) - _MAX_BUTTONS}. Используйте /admin для полного списка.")
+    if appointments:
+        lines.append("\n🌐 Записи с сайта:")
+        lines.extend(_appointment_lines(appointments))
 
     keyboard = [
         [InlineKeyboardButton(
@@ -80,7 +109,7 @@ async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     ]
     keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
 
-    text = "Все предстоящие записи:\n" + "\n".join(lines)
+    text = "\n".join(lines)
     await query.edit_message_text(text[:_MAX_MSG], reply_markup=InlineKeyboardMarkup(keyboard))
 
 
