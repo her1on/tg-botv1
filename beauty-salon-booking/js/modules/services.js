@@ -1,16 +1,16 @@
 import { $, $$ } from '../utils/domHelpers.js';
 import { fmtPrice } from '../utils/formatters.js';
 
-/** @typedef {{ id: number, name: string, cat: string, duration: number, price: number, desc: string }} Service */
+/** @typedef {{ id: number, name: string, cat: string, duration: number, price: number, desc: string, image: string|null }} Service */
 
 /** @type {Service[]} */
 export const SERVICES = [
-  { id: 1, name: 'Стрижка',        cat: 'Волосы', duration: 45,  price: 3500,  desc: 'Профессиональная стрижка с учётом типа волос и формы лица.' },
-  { id: 2, name: 'Окрашивание',    cat: 'Волосы', duration: 120, price: 8000,  desc: 'Окрашивание у ведущего колориста — балаяж, мелирование или ровный тон.' },
-  { id: 3, name: 'Маникюр',        cat: 'Ногти',  duration: 60,  price: 2500,  desc: 'Аккуратный маникюр со стойким покрытием и уходом за кутикулой.' },
-  { id: 4, name: 'Педикюр',        cat: 'Ногти',  duration: 75,  price: 3000,  desc: 'Классический педикюр с обработкой стоп и покрытием по желанию.' },
-  { id: 5, name: 'Укладка',        cat: 'Волосы', duration: 40,  price: 2000,  desc: 'Профессиональная укладка на любой случай — от повседневной до вечерней.' },
-  { id: 6, name: 'Уход за лицом',  cat: 'Лицо',   duration: 60,  price: 5000,  desc: 'Индивидуальный уход с очищением, пилингом и увлажняющей маской.' },
+  { id: 1, name: 'Стрижка',        cat: 'Волосы', duration: 45,  price: 3500,  desc: 'Профессиональная стрижка с учётом типа волос и формы лица.',                          image: 'assets/images/service-haircut.jpg' },
+  { id: 2, name: 'Окрашивание',    cat: 'Волосы', duration: 120, price: 8000,  desc: 'Окрашивание у ведущего колориста — балаяж, мелирование или ровный тон.',              image: 'assets/images/service-coloring.jpg' },
+  { id: 3, name: 'Маникюр',        cat: 'Ногти',  duration: 60,  price: 2500,  desc: 'Аккуратный маникюр со стойким покрытием и уходом за кутикулой.',                      image: 'assets/images/service-manicure.jpg' },
+  { id: 4, name: 'Педикюр',        cat: 'Ногти',  duration: 75,  price: 3000,  desc: 'Классический педикюр с обработкой стоп и покрытием по желанию.',                      image: null },
+  { id: 5, name: 'Укладка',        cat: 'Волосы', duration: 40,  price: 2000,  desc: 'Профессиональная укладка на любой случай — от повседневной до вечерней.',             image: null },
+  { id: 6, name: 'Уход за лицом',  cat: 'Лицо',   duration: 60,  price: 5000,  desc: 'Индивидуальный уход с очищением, пилингом и увлажняющей маской.',                     image: null },
 ];
 
 /** @type {number|null} */
@@ -67,9 +67,12 @@ function renderServicesGrid() {
     const card = document.createElement('article');
     card.className = 'service-card';
     card.dataset.svc = svc.id;
+    const thumbInner = svc.image
+      ? `<img src="${svc.image}" alt="${svc.name}" loading="lazy">`
+      : `<span class="service-card__thumb-tag">// ${svc.cat.toLowerCase()} imagery</span>`;
     card.innerHTML = `
       <div class="service-card__thumb" aria-hidden="true">
-        <span class="service-card__thumb-tag">// ${svc.cat.toLowerCase()} imagery</span>
+        ${thumbInner}
       </div>
       <span class="service-card__category">${svc.cat}</span>
       <h3 class="service-card__title">${svc.name}</h3>
