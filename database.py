@@ -2,8 +2,7 @@ import logging
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
-
-logger = logging.getLogger(__name__)
+from typing import TypedDict
 
 import psycopg2
 import psycopg2.pool
@@ -12,8 +11,20 @@ from psycopg2.extras import RealDictCursor
 from config import DATABASE_URL
 from models import Booking
 
+logger = logging.getLogger(__name__)
+
 _pool: psycopg2.pool.ThreadedConnectionPool | None = None
 _pool_lock = threading.Lock()
+
+
+class AppointmentRow(TypedDict):
+    id: str
+    name: str
+    phone: str
+    service: str
+    appointment_date: object
+    appointment_time: object
+    notes: str | None
 
 
 def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
@@ -21,15 +32,22 @@ def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     if _pool is None:
         with _pool_lock:
             if _pool is None:
-                _pool = psycopg2.pool.ThreadedConnectionPool(1, 10, DATABASE_URL)
+                _pool = psycopg2.pool.ThreadedConnectionPool(
+                    1, 10, DATABASE_URL,
+                    keepalives=1,
+                    keepalives_idle=30,
+                    keepalives_interval=5,
+                    keepalives_count=3,
+                )
     return _pool
 
 
 def close_pool() -> None:
     global _pool
-    if _pool is not None:
-        _pool.closeall()
-        _pool = None
+    with _pool_lock:
+        if _pool is not None:
+            _pool.closeall()
+            _pool = None
 
 
 @contextmanager
@@ -40,14 +58,22 @@ def _conn():
     except psycopg2.pool.PoolError:
         logger.error("Database connection pool exhausted")
         raise
+    close_on_return = False
     try:
         yield conn
         conn.commit()
+    except psycopg2.OperationalError:
+        close_on_return = True
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
     except Exception:
         conn.rollback()
         raise
     finally:
-        pool.putconn(conn)
+        pool.putconn(conn, close=close_on_return)
 
 
 def init_db() -> None:
@@ -137,14 +163,21 @@ def get_all_upcoming_bookings() -> list[Booking]:
             return [_row_to_booking(r) for r in cur.fetchall()]
 
 
-def get_booking_by_id(booking_id: int) -> Booking | None:
+def get_booking_by_id(booking_id: int, user_id: int | None = None) -> Booking | None:
     with _conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                """SELECT id, user_id, service, date, time, full_name, username, phone
-                   FROM bookings WHERE id = %s""",
-                (booking_id,),
-            )
+            if user_id is not None:
+                cur.execute(
+                    """SELECT id, user_id, service, date, time, full_name, username, phone
+                       FROM bookings WHERE id = %s AND user_id = %s""",
+                    (booking_id, user_id),
+                )
+            else:
+                cur.execute(
+                    """SELECT id, user_id, service, date, time, full_name, username, phone
+                       FROM bookings WHERE id = %s""",
+                    (booking_id,),
+                )
             row = cur.fetchone()
             return _row_to_booking(row) if row else None
 
@@ -168,8 +201,7 @@ def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | Non
             return _row_to_booking(row) if row else None
 
 
-def get_all_upcoming_appointments() -> list[dict]:
-    """Return all upcoming web bookings from the appointments table."""
+def get_all_upcoming_appointments() -> list[AppointmentRow]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -182,8 +214,7 @@ def get_all_upcoming_appointments() -> list[dict]:
             return cur.fetchall()
 
 
-def get_unnotified_web_bookings() -> list[dict]:
-    """Return web bookings (from appointments table) not yet notified to the owner."""
+def get_unnotified_web_bookings() -> list[AppointmentRow]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
@@ -198,7 +229,6 @@ def get_unnotified_web_bookings() -> list[dict]:
 
 
 def mark_web_booking_notified(booking_id: str) -> None:
-    """Mark a web booking as notified to the owner."""
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute(

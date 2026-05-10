@@ -1,5 +1,7 @@
 import asyncio
+from collections import defaultdict
 from datetime import date as date_type, datetime
+from time import monotonic
 from zoneinfo import ZoneInfo
 
 from telegram import Update
@@ -12,24 +14,46 @@ from reminders import schedule_reminder
 from states import CONFIRM, ENTER_NAME, ENTER_PHONE, SELECT_DATE, SELECT_SERVICE, SELECT_TIME
 from utils import fmt_date, is_valid_phone, notify_owner
 
+_booking_rate: dict[int, list[float]] = defaultdict(list)
+_MAX_BOOKINGS_PER_HOUR = 3
+_RATE_WINDOW = 3600.0
+
+
+def _is_rate_limited(user_id: int) -> bool:
+    now = monotonic()
+    timestamps = [t for t in _booking_rate[user_id] if now - t < _RATE_WINDOW]
+    _booking_rate[user_id] = timestamps
+    if len(timestamps) >= _MAX_BOOKINGS_PER_HOUR:
+        return True
+    _booking_rate[user_id].append(now)
+    return False
+
 
 async def cb_book(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
+    context.user_data.pop("name_msg_id", None)
+    context.user_data.pop("phone_msg_id", None)
     await query.edit_message_text("Выберите услугу:", reply_markup=services_kb())
     return SELECT_SERVICE
 
 
 async def cmd_book(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.pop("name_msg_id", None)
+    context.user_data.pop("phone_msg_id", None)
     await update.message.reply_text("Выберите услугу:", reply_markup=services_kb())
     return SELECT_SERVICE
 
 
 async def cb_service(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    try:
+        idx = int(query.data.split(":", 1)[1])
+        service = SERVICES[idx]
+    except (ValueError, IndexError):
+        await query.answer("Список услуг обновился. Начните заново.", show_alert=True)
+        return ConversationHandler.END
     await query.answer()
-    idx = int(query.data.split(":", 1)[1])
-    service = SERVICES[idx]
     context.user_data["service"] = service
     await query.edit_message_text(f"Услуга: {service}\n\nВыберите дату:", reply_markup=dates_kb())
     return SELECT_DATE
@@ -140,10 +164,19 @@ async def cb_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     date_str = ud.get("date")
     time_str = ud.get("time")
     phone = ud.get("phone")
-    name = ud.get("name", user.full_name)
-    if not all([service, date_str, time_str, phone, name]):
+    name = (ud.get("name") or user.full_name or "").strip()
+
+    if not all([service, date_str, time_str, phone]) or not name:
         await query.edit_message_text(
             "Что-то пошло не так. Пожалуйста, начните запись заново.",
+            reply_markup=main_menu_kb(user.id),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+
+    if _is_rate_limited(user.id):
+        await query.edit_message_text(
+            "Вы создаёте записи слишком часто. Попробуйте через час.",
             reply_markup=main_menu_kb(user.id),
         )
         context.user_data.clear()

@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from logging.handlers import RotatingFileHandler
+import time
+from collections import defaultdict
 
 from telegram import BotCommand
 from telegram.ext import (
@@ -38,15 +39,14 @@ _fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 _console = logging.StreamHandler()
 _console.setLevel(logging.INFO)
 _console.setFormatter(_fmt)
-_file = RotatingFileHandler("bot.log", maxBytes=5_000_000, backupCount=3, encoding="utf-8")
-_file.setLevel(logging.WARNING)
-_file.setFormatter(_fmt)
 logging.root.setLevel(logging.INFO)
 logging.root.addHandler(_console)
-logging.root.addHandler(_file)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+
+_error_counts: dict[str, int] = defaultdict(int)
+_ALERT_THRESHOLD = 3
 
 
 def _validate_env() -> None:
@@ -67,8 +67,38 @@ def _validate_env() -> None:
         raise RuntimeError("Ошибки в .env:\n" + "\n".join(f"  - {e}" for e in errors))
 
 
+def _init_db_with_retry(max_attempts: int = 5) -> None:
+    for attempt in range(1, max_attempts + 1):
+        try:
+            database.init_db()
+            return
+        except Exception as exc:
+            wait = 2 ** attempt
+            logger.warning(
+                "DB init attempt %d/%d failed: %s. Retrying in %ds...",
+                attempt, max_attempts, exc, wait,
+            )
+            if attempt == max_attempts:
+                raise
+            time.sleep(wait)
+
+
 async def error_handler(update: object, context) -> None:
+    error_type = type(context.error).__name__
     logger.error("Unhandled exception for update %s:", update, exc_info=context.error)
+
+    _error_counts[error_type] += 1
+    if _error_counts[error_type] >= _ALERT_THRESHOLD:
+        _error_counts[error_type] = 0
+        try:
+            for owner_id in OWNER_IDS:
+                await context.bot.send_message(
+                    chat_id=owner_id,
+                    text=f"⚠️ Повторяющаяся ошибка ({error_type}) — {_ALERT_THRESHOLD} раз подряд.\n"
+                         "Проверьте логи Railway.",
+                )
+        except Exception:
+            pass
 
 
 async def _post_init(app: Application) -> None:
@@ -101,7 +131,7 @@ async def _post_shutdown(app: Application) -> None:
 
 def main() -> None:
     _validate_env()
-    database.init_db()
+    _init_db_with_retry()
 
     app = (
         Application.builder()

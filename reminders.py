@@ -37,6 +37,7 @@ def schedule_reminder(
     booking_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M").replace(tzinfo=tz)
     reminder_dt = booking_dt - timedelta(hours=24)
     if reminder_dt > datetime.now(tz):
+        cancel_reminder(app, booking_id)
         app.job_queue.run_once(
             send_reminder,
             when=reminder_dt,

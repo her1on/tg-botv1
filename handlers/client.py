@@ -1,6 +1,7 @@
 import asyncio
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
 from telegram.ext import ContextTypes, ConversationHandler
 
 import database
@@ -45,41 +46,61 @@ async def cb_my_bookings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cb_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    booking_id = int(query.data.split(":")[1])
+    try:
+        booking_id = int(query.data.split(":")[1])
+    except (ValueError, IndexError):
+        await query.answer("Некорректные данные.", show_alert=True)
+        return
     booking = await asyncio.to_thread(database.get_booking_by_id, booking_id)
     if not booking or booking.user_id != update.effective_user.id:
         await query.answer("Запись не найдена.", show_alert=True)
-        await query.edit_message_text("Запись не найдена или уже отменена.", reply_markup=back_to_menu_kb())
+        try:
+            await query.edit_message_text("Запись не найдена или уже отменена.", reply_markup=back_to_menu_kb())
+        except BadRequest:
+            pass
         return
     await query.answer()
-    await query.edit_message_text(
-        f"Вы уверены, что хотите отменить запись?\n\n"
-        f"Услуга: {booking.service}\n"
-        f"Дата: {fmt_date(booking.date)}\n"
-        f"Время: {booking.time}",
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("✅ Да, отменить", callback_data=f"cancel_confirm:{booking_id}"),
-            InlineKeyboardButton("❌ Нет", callback_data="my_bookings"),
-        ]]),
-    )
+    try:
+        await query.edit_message_text(
+            f"Вы уверены, что хотите отменить запись?\n\n"
+            f"Услуга: {booking.service}\n"
+            f"Дата: {fmt_date(booking.date)}\n"
+            f"Время: {booking.time}",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("✅ Да, отменить", callback_data=f"cancel_confirm:{booking_id}"),
+                InlineKeyboardButton("❌ Нет", callback_data="my_bookings"),
+            ]]),
+        )
+    except BadRequest:
+        pass
 
 
 async def cb_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
-    booking_id = int(query.data.split(":")[1])
+    try:
+        booking_id = int(query.data.split(":")[1])
+    except (ValueError, IndexError):
+        await query.answer("Некорректные данные.", show_alert=True)
+        return
     user = update.effective_user
     booking = await asyncio.to_thread(database.cancel_booking, booking_id, user.id)
     if not booking:
-        await query.edit_message_text("Не удалось отменить запись.", reply_markup=main_menu_kb(user.id))
+        try:
+            await query.edit_message_text("Не удалось отменить запись.", reply_markup=main_menu_kb(user.id))
+        except BadRequest:
+            pass
         return
-    await query.edit_message_text(
-        f"Запись отменена.\n\n"
-        f"Услуга: {booking.service}\n"
-        f"Дата: {fmt_date(booking.date)}\n"
-        f"Время: {booking.time}",
-        reply_markup=main_menu_kb(user.id),
-    )
+    try:
+        await query.edit_message_text(
+            f"Запись отменена.\n\n"
+            f"Услуга: {booking.service}\n"
+            f"Дата: {fmt_date(booking.date)}\n"
+            f"Время: {booking.time}",
+            reply_markup=main_menu_kb(user.id),
+        )
+    except BadRequest:
+        pass
     cancel_reminder(context.application, booking_id)
     uname = f"@{user.username}" if user.username else user.full_name
     await notify_owner(
