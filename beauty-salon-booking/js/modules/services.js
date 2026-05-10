@@ -8,9 +8,9 @@ export const SERVICES = [
   { id: 1, name: 'Стрижка',        cat: 'Волосы', duration: 45,  price: 3500,  desc: 'Профессиональная стрижка с учётом типа волос и формы лица.',                          image: 'assets/images/service-haircut.jpg' },
   { id: 2, name: 'Окрашивание',    cat: 'Волосы', duration: 120, price: 8000,  desc: 'Окрашивание у ведущего колориста — балаяж, мелирование или ровный тон.',              image: 'assets/images/service-coloring.jpg' },
   { id: 3, name: 'Маникюр',        cat: 'Ногти',  duration: 60,  price: 2500,  desc: 'Аккуратный маникюр со стойким покрытием и уходом за кутикулой.',                      image: 'assets/images/service-manicure.jpg' },
-  { id: 4, name: 'Педикюр',        cat: 'Ногти',  duration: 75,  price: 3000,  desc: 'Классический педикюр с обработкой стоп и покрытием по желанию.',                      image: null },
-  { id: 5, name: 'Укладка',        cat: 'Волосы', duration: 40,  price: 2000,  desc: 'Профессиональная укладка на любой случай — от повседневной до вечерней.',             image: null },
-  { id: 6, name: 'Уход за лицом',  cat: 'Лицо',   duration: 60,  price: 5000,  desc: 'Индивидуальный уход с очищением, пилингом и увлажняющей маской.',                     image: null },
+  { id: 4, name: 'Педикюр',        cat: 'Ногти',  duration: 75,  price: 3000,  desc: 'Классический педикюр с обработкой стоп и покрытием по желанию.',                      image: 'assets/images/service-pedicure.jpg' },
+  { id: 5, name: 'Укладка',        cat: 'Волосы', duration: 40,  price: 2000,  desc: 'Профессиональная укладка на любой случай — от повседневной до вечерней.',             image: 'assets/images/service-styling.jpg' },
+  { id: 6, name: 'Уход за лицом',  cat: 'Лицо',   duration: 60,  price: 5000,  desc: 'Индивидуальный уход с очищением, пилингом и увлажняющей маской.',                     image: 'assets/images/service-facial.jpg' },
 ];
 
 /** @type {number|null} */
