@@ -3,10 +3,10 @@ import { $, $$ } from '../utils/domHelpers.js';
 import { fmtDateFull, fmtDateISO } from '../utils/formatters.js';
 
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const DOW_LABELS = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+const DOW_LABELS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 const ALL_SLOTS = ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 
-const CLOSED_DAYS = new Set([0, 1]); // Sunday, Monday
+const CLOSED_DAYS = new Set([0]); // Sunday only (getDay: 0=Sun)
 
 /** Computed fresh each render so midnight rollovers are handled correctly. */
 function getToday() {
@@ -114,7 +114,8 @@ function renderCalendar() {
     grid.appendChild(el);
   });
 
-  const firstDow = new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay();
+  // Monday-first offset: getDay() returns 0=Sun..6=Sat → convert to 0=Mon..6=Sun
+  const firstDow = (new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay() + 6) % 7;
   const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
 
   for (let i = 0; i < firstDow; i++) {
