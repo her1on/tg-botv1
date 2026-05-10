@@ -145,6 +145,31 @@ def cancel_booking(booking_id: int, user_id: int | None = None) -> Booking | Non
             return _row_to_booking(row) if row else None
 
 
+def get_unnotified_web_bookings() -> list[dict]:
+    """Return web bookings (from appointments table) not yet notified to the owner."""
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT id, name, phone, service,
+                       appointment_date, appointment_time, notes
+                FROM appointments
+                WHERE owner_notified = false
+                  AND appointment_date >= CURRENT_DATE
+                ORDER BY created_at
+            """)
+            return cur.fetchall()
+
+
+def mark_web_booking_notified(booking_id: str) -> None:
+    """Mark a web booking as notified to the owner."""
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE appointments SET owner_notified = true WHERE id = %s",
+                (booking_id,),
+            )
+
+
 def get_booked_times(date: str) -> list[str]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:

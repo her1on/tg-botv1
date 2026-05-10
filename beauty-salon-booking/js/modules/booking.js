@@ -134,6 +134,7 @@ async function handleSubmit(onStepChange) {
     service: svc.name,
     appointment_date: fmtDateISO(date),
     appointment_time: time,
+    source: 'web',
     ...(notes && { notes }),
   };
 

@@ -33,13 +33,23 @@ CREATE TABLE appointments (
   appointment_date date        NOT NULL,
   appointment_time time        NOT NULL,
   notes            text,
-  status           text        DEFAULT 'pending'
+  source           text        DEFAULT 'web',
+  status           text        DEFAULT 'pending',
+  owner_notified   boolean     DEFAULT false
 );
 
 -- Optional: enable Row Level Security and allow inserts from anon
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public insert" ON appointments
   FOR INSERT TO anon WITH CHECK (true);
+```
+
+If the `appointments` table already exists, run this migration to add the new columns:
+
+```sql
+ALTER TABLE appointments
+  ADD COLUMN IF NOT EXISTS source         text    DEFAULT 'web',
+  ADD COLUMN IF NOT EXISTS owner_notified boolean DEFAULT false;
 ```
 
 ## Project structure
