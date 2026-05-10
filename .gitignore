@@ -4,4 +4,3 @@ bot_persistence*
 bot.log
 __pycache__/
 *.pyc
-beauty-salon-booking/js/config/env.js
