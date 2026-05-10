@@ -45,12 +45,13 @@ async def cb_my_bookings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cb_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
     booking_id = int(query.data.split(":")[1])
     booking = await asyncio.to_thread(database.get_booking_by_id, booking_id)
     if not booking or booking.user_id != update.effective_user.id:
         await query.answer("Запись не найдена.", show_alert=True)
+        await query.edit_message_text("Запись не найдена или уже отменена.", reply_markup=back_to_menu_kb())
         return
+    await query.answer()
     await query.edit_message_text(
         f"Вы уверены, что хотите отменить запись?\n\n"
         f"Услуга: {booking.service}\n"

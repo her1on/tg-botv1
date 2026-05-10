@@ -139,14 +139,14 @@ async def cb_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     date_str = ud.get("date")
     time_str = ud.get("time")
     phone = ud.get("phone")
-    if not all([service, date_str, time_str, phone]):
+    name = ud.get("name", user.full_name)
+    if not all([service, date_str, time_str, phone, name]):
         await query.edit_message_text(
             "Что-то пошло не так. Пожалуйста, начните запись заново.",
             reply_markup=main_menu_kb(user.id),
         )
         context.user_data.clear()
         return ConversationHandler.END
-    name = ud.get("name", user.full_name)
 
     booking_id = await asyncio.to_thread(
         database.add_booking,

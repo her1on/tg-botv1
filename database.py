@@ -1,4 +1,3 @@
-import os
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -7,9 +6,8 @@ import psycopg2
 import psycopg2.pool
 from psycopg2.extras import RealDictCursor
 
+from config import DATABASE_URL
 from models import Booking
-
-DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 _pool: psycopg2.pool.ThreadedConnectionPool | None = None
 _pool_lock = threading.Lock()
