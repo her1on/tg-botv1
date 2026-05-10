@@ -55,7 +55,7 @@ def _validate_env() -> None:
         errors.append("BOT_TOKEN не задан")
     if not DATABASE_URL:
         errors.append("DATABASE_URL не задан")
-    if not any(OWNER_IDS):
+    if not OWNER_IDS:
         errors.append("OWNER_IDS не задан")
     if not SERVICES:
         errors.append("SERVICES пустой")

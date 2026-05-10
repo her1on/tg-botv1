@@ -118,7 +118,6 @@ async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cb_owner_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
     if update.effective_user.id not in OWNER_IDS:
         await query.answer("Нет доступа.", show_alert=True)
         return
@@ -127,6 +126,7 @@ async def cb_owner_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not booking:
         await query.answer("Запись не найдена.", show_alert=True)
         return
+    await query.answer()
     uname = f"@{booking.username}" if booking.username else booking.full_name
     await query.edit_message_text(
         f"Отменить запись?\n\n"

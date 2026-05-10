@@ -22,6 +22,14 @@ function currentMonthStart() {
   return d;
 }
 
+function maxMonthStart() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 /** Internal calendar state. */
 const state = {
   cursor: currentMonthStart(),
@@ -51,8 +59,11 @@ export function initCalendar(onChange) {
   });
 
   $('#nextMonth').addEventListener('click', () => {
-    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
-    renderCalendar();
+    const next = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
+    if (next <= maxMonthStart()) {
+      state.cursor = next;
+      renderCalendar();
+    }
   });
 }
 
@@ -95,13 +106,17 @@ function renderCalendar() {
 
   $('#calMonth').textContent = `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
 
-  // Disable "prev" button if already at current month
   const prevBtn = $('#prevMonth');
   const isCurrentMonth =
     cursor.getFullYear() === today.getFullYear() &&
     cursor.getMonth() === today.getMonth();
   prevBtn.disabled = isCurrentMonth;
   prevBtn.setAttribute('aria-disabled', String(isCurrentMonth));
+
+  const nextBtn = $('#nextMonth');
+  const isMaxMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1) > maxMonthStart();
+  nextBtn.disabled = isMaxMonth;
+  nextBtn.setAttribute('aria-disabled', String(isMaxMonth));
 
   const grid = $('#calGrid');
   grid.innerHTML = '';

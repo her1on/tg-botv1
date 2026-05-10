@@ -1,4 +1,5 @@
 import os
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
@@ -11,12 +12,15 @@ from models import Booking
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 _pool: psycopg2.pool.ThreadedConnectionPool | None = None
+_pool_lock = threading.Lock()
 
 
 def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     global _pool
     if _pool is None:
-        _pool = psycopg2.pool.ThreadedConnectionPool(1, 10, DATABASE_URL)
+        with _pool_lock:
+            if _pool is None:
+                _pool = psycopg2.pool.ThreadedConnectionPool(1, 10, DATABASE_URL)
     return _pool
 
 

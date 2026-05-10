@@ -193,8 +193,8 @@ function restart(onStepChange) {
   resetService();
   resetCalendar();
 
-  setBtn($('#next1'), true);
-  setBtn($('#next2'), true);
+  $('#next1').disabled = true;
+  $('#next2').disabled = true;
 
   advance(1, onStepChange);
   document.getElementById('booking').scrollIntoView({ behavior: 'smooth', block: 'start' });

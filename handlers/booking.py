@@ -1,4 +1,5 @@
 import asyncio
+from datetime import date as date_type, datetime
 
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
@@ -34,8 +35,16 @@ async def cb_service(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def cb_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
-    await query.answer()
     date_str = query.data.split(":", 1)[1]
+    try:
+        parsed = datetime.strptime(date_str, "%Y-%m-%d").date()
+        if parsed < date_type.today():
+            await query.answer("Эта дата уже прошла.", show_alert=True)
+            return SELECT_DATE
+    except ValueError:
+        await query.answer()
+        return SELECT_DATE
+    await query.answer()
     context.user_data["date"] = date_str
     booked = set(await asyncio.to_thread(database.get_booked_times, date_str))
     await query.edit_message_text(
