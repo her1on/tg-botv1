@@ -1,6 +1,5 @@
 # Environment
 .env
-js/config/env.js
 
 # Dependencies
 node_modules/
