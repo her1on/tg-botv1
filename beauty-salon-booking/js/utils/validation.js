@@ -3,7 +3,7 @@
  * @param {string} name
  * @returns {boolean}
  */
-export const validateName = (name) => name.trim().length > 0;
+export const validateName = (name) => name.trim().length >= 2 && name.trim().length <= 20;
 
 /**
  * Loose international phone validation: at least 7 digits, only allowed chars.

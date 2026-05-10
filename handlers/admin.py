@@ -7,6 +7,8 @@ from telegram.ext import ContextTypes
 
 import database
 from config import OWNER_IDS
+from database import AppointmentRow
+from models import Booking
 from keyboards import back_to_menu_kb
 from reminders import cancel_reminder
 from utils import fmt_date
@@ -17,7 +19,7 @@ _MAX_MSG = 4000
 _MAX_BUTTONS = 40
 
 
-def _booking_lines(bookings: list) -> list[str]:
+def _booking_lines(bookings: list[Booking]) -> list[str]:
     lines = []
     current_date = None
     for b in bookings:
@@ -33,7 +35,7 @@ def _booking_lines(bookings: list) -> list[str]:
     return lines
 
 
-def _appointment_lines(appointments: list) -> list[str]:
+def _appointment_lines(appointments: list[AppointmentRow]) -> list[str]:
     lines = []
     current_date = None
     for a in appointments:
@@ -155,12 +157,12 @@ async def cb_owner_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_
     if update.effective_user.id not in OWNER_IDS:
         await query.answer("Нет доступа.", show_alert=True)
         return
-    await query.answer()
     try:
         booking_id = int(query.data.split(":")[1])
     except (ValueError, IndexError):
         await query.answer("Некорректные данные.", show_alert=True)
         return
+    await query.answer()
     booking = await asyncio.to_thread(database.cancel_booking, booking_id)
     if not booking:
         try:

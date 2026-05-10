@@ -83,7 +83,7 @@ def _init_db_with_retry(max_attempts: int = 5) -> None:
             time.sleep(wait)
 
 
-async def error_handler(update: object, context) -> None:
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     error_type = type(context.error).__name__
     logger.error("Unhandled exception for update %s:", update, exc_info=context.error)
 

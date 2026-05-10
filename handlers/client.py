@@ -6,12 +6,13 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 import database
 from config import SALON_NAME
+from models import Booking
 from keyboards import back_to_menu_kb, main_menu_kb
 from reminders import cancel_reminder
 from utils import fmt_date, notify_owner
 
 
-def _build_my_bookings(bookings: list) -> tuple[str, InlineKeyboardMarkup]:
+def _build_my_bookings(bookings: list[Booking]) -> tuple[str, InlineKeyboardMarkup]:
     lines = ["Ваши предстоящие записи:\n"]
     keyboard = []
     for b in bookings:
@@ -77,12 +78,12 @@ async def cb_cancel_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def cb_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
     try:
         booking_id = int(query.data.split(":")[1])
     except (ValueError, IndexError):
         await query.answer("Некорректные данные.", show_alert=True)
         return
+    await query.answer()
     user = update.effective_user
     booking = await asyncio.to_thread(database.cancel_booking, booking_id, user.id)
     if not booking:
