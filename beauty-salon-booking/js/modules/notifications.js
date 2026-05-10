@@ -16,7 +16,11 @@ function createToast(message, type) {
 
   setTimeout(() => {
     toast.classList.remove('toast--visible');
-    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    const fallback = setTimeout(() => toast.remove(), 500);
+    toast.addEventListener('transitionend', () => {
+      clearTimeout(fallback);
+      toast.remove();
+    }, { once: true });
   }, TOAST_DURATION_MS);
 }
 

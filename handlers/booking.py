@@ -203,10 +203,11 @@ async def cb_back_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 async def cb_back_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
+    date_str = context.user_data.get("date", "")
     time_str = context.user_data.get("time", "")
     msg = await query.edit_message_text(
         f"Услуга: {context.user_data.get('service', '')}\n"
-        f"Дата: {fmt_date(context.user_data.get('date', ''))}\n"
+        f"Дата: {fmt_date(date_str) if date_str else '—'}\n"
         f"Время: {time_str}\n\n"
         "Введите ваше имя:",
         reply_markup=name_kb(),
@@ -223,7 +224,7 @@ async def cb_back_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     booked = set(await asyncio.to_thread(database.get_booked_times, date_str)) if date_str else set()
     await query.edit_message_text(
         f"Услуга: {service}\n"
-        f"Дата: {fmt_date(date_str)}\n\n"
+        f"Дата: {fmt_date(date_str) if date_str else '—'}\n\n"
         "Выберите время:",
         reply_markup=times_kb(date_str, booked),
     )

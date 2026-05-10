@@ -199,4 +199,7 @@ def cleanup_old_bookings() -> int:
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM bookings WHERE date < CURRENT_DATE - INTERVAL '45 days'")
-            return cur.rowcount
+            deleted = cur.rowcount
+            cur.execute("DELETE FROM appointments WHERE appointment_date < CURRENT_DATE - INTERVAL '45 days'")
+            deleted += cur.rowcount
+            return deleted

@@ -3,7 +3,7 @@
  * @param {number} amount
  * @returns {string} e.g. "9 800 ₽"
  */
-export const fmtPrice = (amount) => amount.toLocaleString('ru-RU') + ' ₽';
+export const fmtPrice = (amount) => (amount ?? 0).toLocaleString('ru-RU') + ' ₽';
 
 /**
  * Format a Date as a long Russian string (day of week, day, month, year).

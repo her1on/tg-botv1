@@ -168,12 +168,9 @@ async function onDayClick(date) {
 async function fetchBookedSlots(dateISO) {
   if (!supabase) return new Set();
   try {
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('appointment_time')
-      .eq('appointment_date', dateISO);
+    const { data, error } = await supabase.rpc('get_taken_slots', { p_date: dateISO });
     if (error) throw error;
-    return new Set(data.map((r) => String(r.appointment_time).slice(0, 5)));
+    return new Set(data.map((r) => String(r.slot_time).slice(0, 5)));
   } catch (err) {
     console.error('[calendar] fetchBookedSlots error:', err);
     return new Set();
@@ -212,9 +209,9 @@ async function renderSlots() {
       btn.setAttribute('aria-label', `${time} — занято`);
     } else {
       btn.setAttribute('aria-label', `Время ${time}`);
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         state.time = time;
-        renderSlots();
+        await renderSlots();
         if (onChangeCallback) onChangeCallback();
       });
     }

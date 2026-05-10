@@ -80,6 +80,9 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    if update.effective_user.id not in OWNER_IDS:
+        await query.answer("Нет доступа.", show_alert=True)
+        return
     await query.answer()
     bookings, appointments = await asyncio.gather(
         asyncio.to_thread(database.get_all_upcoming_bookings),
