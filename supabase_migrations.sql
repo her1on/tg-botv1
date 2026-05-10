@@ -32,3 +32,20 @@ CREATE POLICY IF NOT EXISTS "anon can insert appointments"
 
 -- Prevent anon from reading or modifying existing rows
 -- (service role used by the bot bypasses RLS)
+
+-- ─── NOTIFY trigger for instant owner alerts ─────────────────────────────────
+
+-- Fires pg_notify('new_appointment', row_json) on every INSERT into appointments.
+-- The bot's pg_listener.py listens on this channel and notifies the owner
+-- in real-time instead of waiting for the 10-minute fallback poll.
+CREATE OR REPLACE FUNCTION notify_new_appointment()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM pg_notify('new_appointment', row_to_json(NEW)::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER appointments_insert_notify
+    AFTER INSERT ON appointments
+    FOR EACH ROW EXECUTE FUNCTION notify_new_appointment();

@@ -14,6 +14,7 @@ from telegram.ext import (
 )
 
 import database
+import pg_listener
 import reminders
 from config import BOT_TOKEN, DATABASE_URL, OWNER_IDS, SERVICES, TIME_SLOTS, WORKING_DAYS
 from handlers.admin import cb_admin_panel, cb_owner_cancel_ask, cb_owner_cancel_confirm, cmd_admin
@@ -116,7 +117,8 @@ async def _post_init(app: Application) -> None:
     except Exception:
         logger.exception("Failed to reschedule reminders on startup — bot will still run.")
     app.job_queue.run_repeating(reminders.daily_cleanup, interval=86400, first=3600, name="daily_cleanup")
-    app.job_queue.run_repeating(reminders.check_web_bookings, interval=120, first=10, name="check_web_bookings")
+    app.job_queue.run_repeating(reminders.check_web_bookings, interval=600, first=60, name="check_web_bookings")
+    asyncio.create_task(pg_listener.listen_appointments(app), name="pg_listener")
     await app.bot.set_my_commands([
         BotCommand("start", "Главное меню"),
         BotCommand("book", "Записаться"),
