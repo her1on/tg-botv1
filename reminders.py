@@ -66,7 +66,6 @@ async def check_web_bookings(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     for b in bookings:
         try:
-            await asyncio.to_thread(database.mark_web_booking_notified, b["id"])
             date_str = str(b["appointment_date"])
             time_str = str(b["appointment_time"])[:5]
             text = (
@@ -80,5 +79,6 @@ async def check_web_bookings(context: ContextTypes.DEFAULT_TYPE) -> None:
             if b.get("notes"):
                 text += f"\nКомментарий: {b['notes']}"
             await notify_owner(context, text)
+            await asyncio.to_thread(database.mark_web_booking_notified, b["id"])
         except Exception as exc:
             logger.error("check_web_bookings: failed for booking %s: %s", b.get("id"), exc)

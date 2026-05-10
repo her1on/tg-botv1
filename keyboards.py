@@ -19,9 +19,9 @@ def main_menu_kb(user_id: int = 0) -> InlineKeyboardMarkup:
 def services_kb() -> InlineKeyboardMarkup:
     rows = []
     for i in range(0, len(SERVICES), 2):
-        row = [InlineKeyboardButton(SERVICES[i], callback_data=f"svc:{SERVICES[i]}")]
+        row = [InlineKeyboardButton(SERVICES[i], callback_data=f"svc:{i}")]
         if i + 1 < len(SERVICES):
-            row.append(InlineKeyboardButton(SERVICES[i + 1], callback_data=f"svc:{SERVICES[i + 1]}"))
+            row.append(InlineKeyboardButton(SERVICES[i + 1], callback_data=f"svc:{i + 1}"))
         rows.append(row)
     rows.append([InlineKeyboardButton("← Назад", callback_data="back:main")])
     return InlineKeyboardMarkup(rows)

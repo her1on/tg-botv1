@@ -1,6 +1,9 @@
+import logging
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 import psycopg2
 import psycopg2.pool
@@ -32,7 +35,11 @@ def close_pool() -> None:
 @contextmanager
 def _conn():
     pool = _get_pool()
-    conn = pool.getconn()
+    try:
+        conn = pool.getconn()
+    except psycopg2.pool.PoolError:
+        logger.error("Database connection pool exhausted")
+        raise
     try:
         yield conn
         conn.commit()
@@ -58,6 +65,20 @@ def init_db() -> None:
                     time       TEXT    NOT NULL,
                     created_at TIMESTAMPTZ NOT NULL,
                     UNIQUE(date, time)
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS appointments (
+                    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name             TEXT        NOT NULL DEFAULT '',
+                    phone            TEXT        NOT NULL DEFAULT '',
+                    service          TEXT        NOT NULL DEFAULT '',
+                    appointment_date DATE        NOT NULL,
+                    appointment_time TIME        NOT NULL,
+                    notes            TEXT,
+                    source           TEXT        NOT NULL DEFAULT 'web',
+                    owner_notified   BOOLEAN     NOT NULL DEFAULT false,
+                    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
             """)
 

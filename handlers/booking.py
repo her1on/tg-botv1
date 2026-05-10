@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 
 import database
-from config import SALON_NAME, TIMEZONE
+from config import SALON_NAME, SERVICES, TIMEZONE
 from keyboards import confirm_kb, dates_kb, main_menu_kb, name_kb, phone_kb, services_kb, times_kb
 from reminders import schedule_reminder
 from states import CONFIRM, ENTER_NAME, ENTER_PHONE, SELECT_DATE, SELECT_SERVICE, SELECT_TIME
@@ -28,7 +28,8 @@ async def cmd_book(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def cb_service(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    service = query.data.split(":", 1)[1]
+    idx = int(query.data.split(":", 1)[1])
+    service = SERVICES[idx]
     context.user_data["service"] = service
     await query.edit_message_text(f"Услуга: {service}\n\nВыберите дату:", reply_markup=dates_kb())
     return SELECT_DATE
@@ -78,8 +79,8 @@ async def cb_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def cb_name_entered(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     name = update.message.text.strip()
-    if len(name) < 2:
-        await update.message.reply_text("Введите имя (минимум 2 символа).")
+    if len(name) < 2 or len(name) > 20:
+        await update.message.reply_text("Введите имя (от 2 до 20 символов).")
         return ENTER_NAME
     context.user_data["name"] = name
     text = (
