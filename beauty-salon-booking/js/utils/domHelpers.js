@@ -15,14 +15,6 @@ export const $ = (selector, ctx = document) => ctx.querySelector(selector);
 export const $$ = (selector, ctx = document) => [...ctx.querySelectorAll(selector)];
 
 /**
- * Toggle a class on an element, optionally forcing the state.
- * @param {Element} el
- * @param {string} cls
- * @param {boolean} [force]
- */
-export const toggleClass = (el, cls, force) => el.classList.toggle(cls, force);
-
-/**
  * Set disabled state and inner HTML on a button simultaneously.
  * @param {HTMLButtonElement} btn
  * @param {boolean} disabled

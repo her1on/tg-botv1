@@ -8,7 +8,7 @@ import { getSelectedDate, getSelectedTime, resetCalendar } from './calendar.js';
 
 /**
  * Initialize the multi-step booking form: wire up all step navigation and submission.
- * @param {() => void} onStepChange - called whenever the active step changes
+ * @param {(step: number) => void} onStepChange - called whenever the active step changes
  */
 export function initBooking(onStepChange) {
   $('#next1').addEventListener('click', () => {
@@ -27,10 +27,9 @@ export function initBooking(onStepChange) {
   });
 
   $('#submitBooking').addEventListener('click', () => handleSubmit(onStepChange));
-
   $('#restartBtn').addEventListener('click', () => restart(onStepChange));
 
-  // Live validation clear
+  // Live validation: clear error state as user fixes input
   $('#name').addEventListener('input', (e) => {
     if (e.target.value.trim()) e.target.closest('.field').classList.remove('field--error');
   });
@@ -40,7 +39,7 @@ export function initBooking(onStepChange) {
 }
 
 /**
- * Enable or disable the "Continue" button on step 1 based on service selection.
+ * Enable or disable the "Continue" button on step 1.
  * @param {boolean} enabled
  */
 export function setStep1Continue(enabled) {
@@ -48,7 +47,7 @@ export function setStep1Continue(enabled) {
 }
 
 /**
- * Enable or disable the "Continue" button on step 2 based on date+time selection.
+ * Enable or disable the "Continue" button on step 2.
  * @param {boolean} enabled
  */
 export function setStep2Continue(enabled) {
@@ -81,15 +80,15 @@ function renderReview() {
   $('#reviewSummary').innerHTML = `
     <div class="review-summary__item">
       <span class="review-summary__label">Услуга</span>
-      <span class="review-summary__value">${svc.name}</span>
+      <span class="review-summary__value">${escapeHtml(svc.name)}</span>
     </div>
     <div class="review-summary__item">
       <span class="review-summary__label">Дата</span>
-      <span class="review-summary__value">${fmtDateShort(date)}</span>
+      <span class="review-summary__value">${escapeHtml(fmtDateShort(date))}</span>
     </div>
     <div class="review-summary__item">
       <span class="review-summary__label">Время</span>
-      <span class="review-summary__value">${time}</span>
+      <span class="review-summary__value">${escapeHtml(time)}</span>
     </div>
     <div class="review-summary__item">
       <span class="review-summary__label">Итого</span>
@@ -103,6 +102,7 @@ async function handleSubmit(onStepChange) {
   const phoneEl = $('#phone');
   const name = nameEl.value.trim();
   const phone = phoneEl.value.trim();
+  const notes = $('#notes').value.trim();
 
   const nameOk = validateName(name);
   const phoneOk = validatePhone(phone);
@@ -115,12 +115,18 @@ async function handleSubmit(onStepChange) {
     return;
   }
 
+  // Guard: these should always be set at step 3, but defend against edge cases
   const svc = getSelectedService();
   const date = getSelectedDate();
   const time = getSelectedTime();
 
+  if (!svc || !date || !time) {
+    notify.error('Произошла ошибка. Пожалуйста, начните запись заново.');
+    return;
+  }
+
   const submitBtn = $('#submitBooking');
-  setBtn(submitBtn, true, '<span class="spinner" aria-hidden="true"></span> Отправка…');
+  setBtn(submitBtn, true, '<span aria-hidden="true">⏳</span> Отправка…');
 
   const payload = {
     name,
@@ -128,6 +134,7 @@ async function handleSubmit(onStepChange) {
     service: svc.name,
     appointment_date: fmtDateISO(date),
     appointment_time: time,
+    ...(notes && { notes }),
   };
 
   try {
@@ -144,8 +151,8 @@ async function handleSubmit(onStepChange) {
     advance(4, onStepChange);
     notify.success('Запись подтверждена! Ждём вас.');
   } catch (err) {
-    console.error(err);
-    notify.error('Не удалось записать вас. Попробуйте ещё раз или позвоните нам.');
+    console.error('[booking] submit error:', err);
+    notify.error('Не удалось отправить запись. Попробуйте ещё раз или позвоните нам.');
   } finally {
     setBtn(submitBtn, false, 'Подтвердить запись <span aria-hidden="true">→</span>');
   }

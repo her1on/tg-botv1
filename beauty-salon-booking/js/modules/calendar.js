@@ -7,11 +7,23 @@ const ALL_SLOTS = ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:0
 
 const CLOSED_DAYS = new Set([0, 1]); // Sunday, Monday
 
-const today = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
+/** Computed fresh each render so midnight rollovers are handled correctly. */
+function getToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function currentMonthStart() {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 /** Internal calendar state. */
 const state = {
-  cursor: (() => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d; })(),
+  cursor: currentMonthStart(),
   date: /** @type {Date|null} */ (null),
   time: /** @type {string|null} */ (null),
 };
@@ -29,8 +41,12 @@ export function initCalendar(onChange) {
   renderSlots();
 
   $('#prevMonth').addEventListener('click', () => {
-    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
-    renderCalendar();
+    const prev = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
+    // Do not navigate before the current month
+    if (prev >= currentMonthStart()) {
+      state.cursor = prev;
+      renderCalendar();
+    }
   });
 
   $('#nextMonth').addEventListener('click', () => {
@@ -52,11 +68,12 @@ export const getSelectedDate = () => state.date;
 export const getSelectedTime = () => state.time;
 
 /**
- * Reset date and time selection and re-render.
+ * Reset date, time, and calendar cursor back to the current month.
  */
 export function resetCalendar() {
   state.date = null;
   state.time = null;
+  state.cursor = currentMonthStart();
   renderCalendar();
   renderSlots();
 }
@@ -72,8 +89,18 @@ function sameDay(a, b) {
 }
 
 function renderCalendar() {
+  const today = getToday();
   const { cursor } = state;
+
   $('#calMonth').textContent = `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
+
+  // Disable "prev" button if already at current month
+  const prevBtn = $('#prevMonth');
+  const isCurrentMonth =
+    cursor.getFullYear() === today.getFullYear() &&
+    cursor.getMonth() === today.getMonth();
+  prevBtn.disabled = isCurrentMonth;
+  prevBtn.setAttribute('aria-disabled', String(isCurrentMonth));
 
   const grid = $('#calGrid');
   grid.innerHTML = '';
@@ -155,12 +182,13 @@ function renderSlots() {
     btn.type = 'button';
     btn.className = 'slot';
     btn.textContent = time;
-    btn.setAttribute('aria-label', `Время ${time}`);
 
     const isTaken = (i + seed) % 4 === 1; // demo only
     if (isTaken) {
       btn.disabled = true;
       btn.setAttribute('aria-label', `${time} — занято`);
+    } else {
+      btn.setAttribute('aria-label', `Время ${time}`);
     }
 
     if (state.time === time) {

@@ -32,6 +32,7 @@ CREATE TABLE appointments (
   service          text        NOT NULL,
   appointment_date date        NOT NULL,
   appointment_time time        NOT NULL,
+  notes            text,
   status           text        DEFAULT 'pending'
 );
 
