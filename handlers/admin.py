@@ -113,6 +113,11 @@ async def cb_admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )]
         for b in visible
     ]
+    for a in appointments:
+        keyboard.append([InlineKeyboardButton(
+            f"🌐 ❌ {fmt_date(str(a['appointment_date']))} {str(a['appointment_time'])[:5]} — {a['service']}",
+            callback_data=f"owner_cancel_web_ask:{a['id']}",
+        )])
     keyboard.append([InlineKeyboardButton("← Главное меню", callback_data="menu")])
 
     text = "\n".join(lines)
@@ -191,3 +196,62 @@ async def cb_owner_cancel_confirm(update: Update, context: ContextTypes.DEFAULT_
         )
     except Exception as exc:
         logger.error("Failed to notify client about cancellation: %s", exc)
+
+
+async def cb_owner_cancel_web_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if update.effective_user.id not in OWNER_IDS:
+        await query.answer("Нет доступа.", show_alert=True)
+        return
+    appointment_id = query.data.split(":", 1)[1]
+    record = await asyncio.to_thread(database.get_appointment_by_id, appointment_id)
+    if not record:
+        await query.answer("Запись не найдена.", show_alert=True)
+        return
+    await query.answer()
+    date_str = str(record["appointment_date"])
+    time_str = str(record["appointment_time"])[:5]
+    try:
+        await query.edit_message_text(
+            f"Отменить запись с сайта?\n\n"
+            f"Клиент: {record['name']}\n"
+            f"Телефон: {record['phone']}\n"
+            f"Услуга: {record['service']}\n"
+            f"Дата: {fmt_date(date_str)}\n"
+            f"Время: {time_str}",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("✅ Да, отменить", callback_data=f"owner_cancel_web:{appointment_id}"),
+                InlineKeyboardButton("❌ Нет", callback_data="admin"),
+            ]]),
+        )
+    except BadRequest:
+        pass
+
+
+async def cb_owner_cancel_web_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if update.effective_user.id not in OWNER_IDS:
+        await query.answer("Нет доступа.", show_alert=True)
+        return
+    appointment_id = query.data.split(":", 1)[1]
+    await query.answer()
+    record = await asyncio.to_thread(database.cancel_appointment, appointment_id)
+    if not record:
+        try:
+            await query.edit_message_text("Не удалось отменить запись.", reply_markup=back_to_menu_kb())
+        except BadRequest:
+            pass
+        return
+    date_str = str(record["appointment_date"])
+    time_str = str(record["appointment_time"])[:5]
+    try:
+        await query.edit_message_text(
+            f"Запись с сайта отменена.\n\n"
+            f"Клиент: {record['name']}\n"
+            f"Услуга: {record['service']}\n"
+            f"Дата: {fmt_date(date_str)}\n"
+            f"Время: {time_str}",
+            reply_markup=back_to_menu_kb(),
+        )
+    except BadRequest:
+        pass

@@ -18,7 +18,14 @@ import database
 import pg_listener
 import reminders
 from config import BOT_TOKEN, DATABASE_URL, OWNER_IDS, SERVICES, TIME_SLOTS, WORKING_DAYS
-from handlers.admin import cb_admin_panel, cb_owner_cancel_ask, cb_owner_cancel_confirm, cmd_admin
+from handlers.admin import (
+    cb_admin_panel,
+    cb_owner_cancel_ask,
+    cb_owner_cancel_confirm,
+    cb_owner_cancel_web_ask,
+    cb_owner_cancel_web_confirm,
+    cmd_admin,
+)
 from handlers.booking import (
     cb_back_date,
     cb_back_main,
@@ -205,6 +212,8 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(cb_admin_panel, pattern="^admin$"))
     app.add_handler(CallbackQueryHandler(cb_owner_cancel_ask, pattern=r"^owner_cancel_ask:"))
     app.add_handler(CallbackQueryHandler(cb_owner_cancel_confirm, pattern=r"^owner_cancel:"))
+    app.add_handler(CallbackQueryHandler(cb_owner_cancel_web_ask, pattern=r"^owner_cancel_web_ask:"))
+    app.add_handler(CallbackQueryHandler(cb_owner_cancel_web_confirm, pattern=r"^owner_cancel_web:"))
     app.add_handler(CallbackQueryHandler(cb_menu, pattern="^menu$"))
 
     logger.info("Бот запущен...")
