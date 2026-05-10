@@ -131,8 +131,10 @@ async def _post_init(app: Application) -> None:
 
 
 async def _post_shutdown(app: Application) -> None:
-    for task in list(_bg_tasks):
-        task.cancel()
+    if _bg_tasks:
+        for task in list(_bg_tasks):
+            task.cancel()
+        await asyncio.gather(*_bg_tasks, return_exceptions=True)
     database.close_pool()
     logger.warning("Bot shut down.")
 

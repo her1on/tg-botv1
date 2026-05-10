@@ -1,6 +1,6 @@
 import asyncio
 from collections import defaultdict
-from datetime import date as date_type, datetime
+from datetime import datetime
 from time import monotonic
 from zoneinfo import ZoneInfo
 

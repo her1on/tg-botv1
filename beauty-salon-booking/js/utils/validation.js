@@ -12,5 +12,5 @@ export const validateName = (name) => name.trim().length >= 2 && name.trim().len
  */
 export const validatePhone = (phone) => {
   const digits = (phone || '').replace(/\D/g, '');
-  return digits.length >= 7 && /^[\d\s+()\\-]+$/.test(phone);
+  return digits.length >= 7 && /^[\d\s+()\-]+$/.test(phone);
 };
